@@ -22,6 +22,7 @@ from weather import (
     get_ararat_status,
     get_air_status,
     get_time_mode,
+    get_sky_text,
 )
 from texts import TEXTS
 from db import (
@@ -76,8 +77,6 @@ def subscribe_keyboard(lang: str):
 
 
 def build_weather_text(lang: str, data: dict, status_key: str) -> str:
-    from weather import get_air_status, get_time_mode, get_sky_text
-
     visibility_km = round(data["visibility"] / 1000, 1)
     air_key = get_air_status(data)
     time_mode = get_time_mode()
@@ -126,8 +125,7 @@ async def callback_handler(callback: CallbackQuery):
         set_user_language(chat_id, "ru")
         lang = "ru"
         await callback.message.answer(
-            f"{TEXTS[lang]['language_set']}\n\n"
-            f"{TEXTS[lang]['check_prompt']}",
+            f"{TEXTS[lang]['language_set']}\n\n{TEXTS[lang]['check_prompt']}",
             reply_markup=subscribe_keyboard(lang),
         )
 
@@ -135,8 +133,7 @@ async def callback_handler(callback: CallbackQuery):
         set_user_language(chat_id, "en")
         lang = "en"
         await callback.message.answer(
-            f"{TEXTS[lang]['language_set']}\n\n"
-            f"{TEXTS[lang]['check_prompt']}",
+            f"{TEXTS[lang]['language_set']}\n\n{TEXTS[lang]['check_prompt']}",
             reply_markup=subscribe_keyboard(lang),
         )
 
@@ -144,8 +141,7 @@ async def callback_handler(callback: CallbackQuery):
         set_user_language(chat_id, "hy")
         lang = "hy"
         await callback.message.answer(
-            f"{TEXTS[lang]['language_set']}\n\n"
-            f"{TEXTS[lang]['check_prompt']}",
+            f"{TEXTS[lang]['language_set']}\n\n{TEXTS[lang]['check_prompt']}",
             reply_markup=subscribe_keyboard(lang),
         )
 
