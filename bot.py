@@ -114,6 +114,40 @@ def build_weather_text(lang: str, data: dict, status_key: str) -> str:
     return text
 
 
+def should_send_notification(status_key: str, data: dict) -> bool:
+    air_key = get_air_status(data)
+
+    if status_key == "excellent":
+        return True
+
+    if status_key == "good" and air_key in ("air_clean", "air_ok"):
+        return True
+
+    if status_key == "smog":
+        return True
+
+    return False
+
+
+def build_morning_notification_text(lang: str, data: dict, status_key: str) -> str:
+    visibility_km = round(data["visibility"] / 1000, 1)
+    air_key = get_air_status(data)
+
+    status_line = random.choice(TEXTS[lang][status_key])
+    air_line = TEXTS[lang]["air_status"][air_key]
+    decision_line = TEXTS[lang]["decision_text"][status_key]
+
+    text = (
+        f"🏔 Ararat Now\n\n"
+        f"{status_line}\n\n"
+        f"👀 {TEXTS[lang]['visibility_label']}: {visibility_km} km\n"
+        f"🌫 {TEXTS[lang]['air_label']}: {air_line}\n\n"
+        f"🎯 {decision_line}"
+    )
+
+    return text
+
+
 @dp.message(Command("start"))
 async def start_handler(message: Message):
     ensure_user(message.chat.id)
@@ -160,6 +194,7 @@ async def callback_handler(callback: CallbackQuery):
         )
 
     elif data == "subscribe":
+        ensure_user(chat_id)
         lang = get_user_language(chat_id) or "ru"
         subscribe_user(chat_id)
         await callback.message.answer(
@@ -168,6 +203,7 @@ async def callback_handler(callback: CallbackQuery):
         )
 
     elif data == "unsubscribe":
+        ensure_user(chat_id)
         lang = get_user_language(chat_id) or "ru"
         unsubscribe_user(chat_id)
         await callback.message.answer(
@@ -233,33 +269,23 @@ async def send_morning_notifications():
             data = get_weather_data(lang)
             status_key = get_ararat_status(data)
 
-            visibility_km = round(data["visibility"] / 1000, 1)
-            air_key = get_air_status(data)
+            if not should_send_notification(status_key, data):
+                continue
 
-            status_line = random.choice(TEXTS[lang][status_key])
-            air_line = TEXTS[lang]["air_status"][air_key]
-            decision_line = TEXTS[lang]["decision_text"][status_key]
-
-            text = (
-                f"🏔 Ararat Now\n\n"
-                f"{status_line}\n\n"
-                f"👀 Видимость: {visibility_km} км\n"
-                f"🌫 Воздух: {air_line}\n\n"
-                f"🎯 {decision_line}"
-            )
-
+            text = build_morning_notification_text(lang, data, status_key)
             await bot.send_message(chat_id, text)
 
         except Exception:
-            print(f"=== ERROR notify chat_id={chat_id} ===")
+            print(f"=== FULL ERROR notify chat_id={chat_id} ===")
             traceback.print_exc()
+
 
 async def main():
     init_db()
     scheduler.add_job(
-    send_morning_notifications,
-    CronTrigger(hour=10, minute=0, timezone="Asia/Yerevan")
-)
+        send_morning_notifications,
+        CronTrigger(hour=10, minute=0, timezone="Asia/Yerevan")
+    )
     scheduler.start()
     await dp.start_polling(bot)
 
