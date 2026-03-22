@@ -26,6 +26,8 @@ from weather import (
 )
 from texts import TEXTS
 from db import (
+    init_db,
+    ensure_user,
     set_user_language,
     get_user_language,
     subscribe_user,
@@ -59,17 +61,25 @@ def language_keyboard():
     )
 
 
-def subscribe_keyboard(lang: str):
+def subscribe_keyboard(lang: str, chat_id: int):
+    if is_user_subscribed(chat_id):
+        return InlineKeyboardMarkup(
+            inline_keyboard=[
+                [
+                    InlineKeyboardButton(
+                        text=TEXTS[lang]["unsubscribe_button"],
+                        callback_data="unsubscribe"
+                    ),
+                ]
+            ]
+        )
+
     return InlineKeyboardMarkup(
         inline_keyboard=[
             [
                 InlineKeyboardButton(
                     text=TEXTS[lang]["subscribe_button"],
                     callback_data="subscribe"
-                ),
-                InlineKeyboardButton(
-                    text=TEXTS[lang]["unsubscribe_button"],
-                    callback_data="unsubscribe"
                 ),
             ]
         ]
@@ -106,6 +116,7 @@ def build_weather_text(lang: str, data: dict, status_key: str) -> str:
 
 @dp.message(Command("start"))
 async def start_handler(message: Message):
+    ensure_user(message.chat.id)
     await message.answer(
         TEXTS["ru"]["welcome"],
         reply_markup=language_keyboard(),
@@ -122,38 +133,47 @@ async def callback_handler(callback: CallbackQuery):
     data = callback.data
 
     if data == "lang_ru":
+        ensure_user(chat_id)
         set_user_language(chat_id, "ru")
         lang = "ru"
         await callback.message.answer(
             f"{TEXTS[lang]['language_set']}\n\n{TEXTS[lang]['check_prompt']}",
-            reply_markup=subscribe_keyboard(lang),
+            reply_markup=subscribe_keyboard(lang, chat_id),
         )
 
     elif data == "lang_en":
+        ensure_user(chat_id)
         set_user_language(chat_id, "en")
         lang = "en"
         await callback.message.answer(
             f"{TEXTS[lang]['language_set']}\n\n{TEXTS[lang]['check_prompt']}",
-            reply_markup=subscribe_keyboard(lang),
+            reply_markup=subscribe_keyboard(lang, chat_id),
         )
 
     elif data == "lang_hy":
+        ensure_user(chat_id)
         set_user_language(chat_id, "hy")
         lang = "hy"
         await callback.message.answer(
             f"{TEXTS[lang]['language_set']}\n\n{TEXTS[lang]['check_prompt']}",
-            reply_markup=subscribe_keyboard(lang),
+            reply_markup=subscribe_keyboard(lang, chat_id),
         )
 
     elif data == "subscribe":
         lang = get_user_language(chat_id) or "ru"
         subscribe_user(chat_id)
-        await callback.message.answer(TEXTS[lang]["subscribed_text"])
+        await callback.message.answer(
+            TEXTS[lang]["subscribed_text"],
+            reply_markup=subscribe_keyboard(lang, chat_id),
+        )
 
     elif data == "unsubscribe":
         lang = get_user_language(chat_id) or "ru"
         unsubscribe_user(chat_id)
-        await callback.message.answer(TEXTS[lang]["unsubscribed_text"])
+        await callback.message.answer(
+            TEXTS[lang]["unsubscribed_text"],
+            reply_markup=subscribe_keyboard(lang, chat_id),
+        )
 
     await callback.answer()
 
@@ -161,22 +181,31 @@ async def callback_handler(callback: CallbackQuery):
 @dp.message(Command("subscribe"))
 async def subscribe_command(message: Message):
     chat_id = message.chat.id
+    ensure_user(chat_id)
     lang = get_user_language(chat_id) or "ru"
     subscribe_user(chat_id)
-    await message.answer(TEXTS[lang]["subscribed_text"])
+    await message.answer(
+        TEXTS[lang]["subscribed_text"],
+        reply_markup=subscribe_keyboard(lang, chat_id),
+    )
 
 
 @dp.message(Command("unsubscribe"))
 async def unsubscribe_command(message: Message):
     chat_id = message.chat.id
+    ensure_user(chat_id)
     lang = get_user_language(chat_id) or "ru"
     unsubscribe_user(chat_id)
-    await message.answer(TEXTS[lang]["unsubscribed_text"])
+    await message.answer(
+        TEXTS[lang]["unsubscribed_text"],
+        reply_markup=subscribe_keyboard(lang, chat_id),
+    )
 
 
 @dp.message(Command("check_now"))
 async def check_now_handler(message: Message):
     chat_id = message.chat.id
+    ensure_user(chat_id)
     lang = get_user_language(chat_id)
 
     if not lang:
@@ -217,6 +246,7 @@ async def send_morning_notifications():
 
 
 async def main():
+    init_db()
     scheduler.add_job(
         send_morning_notifications,
         CronTrigger(hour=10, minute=0)
