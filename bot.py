@@ -248,9 +248,9 @@ async def send_morning_notifications():
 async def main():
     init_db()
     scheduler.add_job(
-        send_morning_notifications,
-        CronTrigger(hour=10, minute=0)
-    )
+    send_morning_notifications,
+    CronTrigger(hour=10, minute=0, timezone="Asia/Yerevan")
+)
     scheduler.start()
     await dp.start_polling(bot)
 
