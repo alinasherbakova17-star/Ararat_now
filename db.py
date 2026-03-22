@@ -5,7 +5,9 @@ DB_PATH = Path("bot_data.db")
 
 
 def get_connection():
-    return sqlite3.connect(DB_PATH)
+    conn = sqlite3.connect(DB_PATH)
+    conn.row_factory = sqlite3.Row
+    return conn
 
 
 def init_db():
@@ -29,8 +31,11 @@ def ensure_user(chat_id: int):
     cur = conn.cursor()
 
     cur.execute(
-        "INSERT OR IGNORE INTO users (chat_id, language, subscribed) VALUES (?, ?, ?)",
-        (chat_id, None, 0)
+        """
+        INSERT OR IGNORE INTO users (chat_id, language, subscribed)
+        VALUES (?, NULL, 0)
+        """,
+        (chat_id,)
     )
 
     conn.commit()
@@ -42,12 +47,19 @@ def set_user_language(chat_id: int, language: str):
     cur = conn.cursor()
 
     cur.execute(
-        "INSERT OR IGNORE INTO users (chat_id, language, subscribed) VALUES (?, ?, ?)",
-        (chat_id, language, 0)
+        """
+        INSERT OR IGNORE INTO users (chat_id, language, subscribed)
+        VALUES (?, ?, 0)
+        """,
+        (chat_id, language)
     )
 
     cur.execute(
-        "UPDATE users SET language = ? WHERE chat_id = ?",
+        """
+        UPDATE users
+        SET language = ?
+        WHERE chat_id = ?
+        """,
         (language, chat_id)
     )
 
@@ -67,8 +79,8 @@ def get_user_language(chat_id: int):
 
     conn.close()
 
-    if row:
-        return row[0]
+    if row and row["language"]:
+        return row["language"]
     return None
 
 
@@ -77,12 +89,19 @@ def subscribe_user(chat_id: int):
     cur = conn.cursor()
 
     cur.execute(
-        "INSERT OR IGNORE INTO users (chat_id, language, subscribed) VALUES (?, ?, ?)",
-        (chat_id, None, 1)
+        """
+        INSERT OR IGNORE INTO users (chat_id, language, subscribed)
+        VALUES (?, NULL, 1)
+        """,
+        (chat_id,)
     )
 
     cur.execute(
-        "UPDATE users SET subscribed = 1 WHERE chat_id = ?",
+        """
+        UPDATE users
+        SET subscribed = 1
+        WHERE chat_id = ?
+        """,
         (chat_id,)
     )
 
@@ -95,7 +114,11 @@ def unsubscribe_user(chat_id: int):
     cur = conn.cursor()
 
     cur.execute(
-        "UPDATE users SET subscribed = 0 WHERE chat_id = ?",
+        """
+        UPDATE users
+        SET subscribed = 0
+        WHERE chat_id = ?
+        """,
         (chat_id,)
     )
 
@@ -115,9 +138,10 @@ def is_user_subscribed(chat_id: int) -> bool:
 
     conn.close()
 
-    if row:
-        return bool(row[0])
-    return False
+    if row is None:
+        return False
+
+    return bool(row["subscribed"])
 
 
 def get_all_subscribed_users():
@@ -131,4 +155,4 @@ def get_all_subscribed_users():
 
     conn.close()
 
-    return [row[0] for row in rows]
+    return [row["chat_id"] for row in rows]
