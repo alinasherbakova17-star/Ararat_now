@@ -233,17 +233,26 @@ async def send_morning_notifications():
             data = get_weather_data(lang)
             status_key = get_ararat_status(data)
 
+            visibility_km = round(data["visibility"] / 1000, 1)
+            air_key = get_air_status(data)
+
+            status_line = random.choice(TEXTS[lang][status_key])
+            air_line = TEXTS[lang]["air_status"][air_key]
+            decision_line = TEXTS[lang]["decision_text"][status_key]
+
             text = (
-                f"<b>{TEXTS[lang]['morning_title']}</b>\n\n"
-                f"{build_weather_text(lang, data, status_key)}"
+                f"🏔 Ararat Now\n\n"
+                f"{status_line}\n\n"
+                f"👀 Видимость: {visibility_km} км\n"
+                f"🌫 Воздух: {air_line}\n\n"
+                f"🎯 {decision_line}"
             )
 
             await bot.send_message(chat_id, text)
 
         except Exception:
-            print(f"=== FULL ERROR notify chat_id={chat_id} ===")
+            print(f"=== ERROR notify chat_id={chat_id} ===")
             traceback.print_exc()
-
 
 async def main():
     init_db()
