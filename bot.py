@@ -39,6 +39,7 @@ from db import (
 load_dotenv()
 
 TOKEN = os.getenv("BOT_TOKEN")
+ADMIN_CHAT_ID = os.getenv("ADMIN_CHAT_ID")
 
 bot = Bot(
     token=TOKEN,
@@ -61,29 +62,41 @@ def language_keyboard():
     )
 
 
-def subscribe_keyboard(lang: str, chat_id: int):
-    if is_user_subscribed(chat_id):
-        return InlineKeyboardMarkup(
-            inline_keyboard=[
-                [
-                    InlineKeyboardButton(
-                        text=TEXTS[lang]["unsubscribe_button"],
-                        callback_data="unsubscribe"
-                    ),
-                ]
-            ]
-        )
+def action_keyboard(lang: str, chat_id: int):
+    buttons = []
 
-    return InlineKeyboardMarkup(
-        inline_keyboard=[
-            [
-                InlineKeyboardButton(
-                    text=TEXTS[lang]["subscribe_button"],
-                    callback_data="subscribe"
-                ),
-            ]
-        ]
-    )
+    if is_user_subscribed(chat_id):
+        buttons.append([
+            InlineKeyboardButton(
+                text=TEXTS[lang]["unsubscribe_button"],
+                callback_data="unsubscribe"
+            )
+        ])
+    else:
+        buttons.append([
+            InlineKeyboardButton(
+                text=TEXTS[lang]["subscribe_button"],
+                callback_data="subscribe"
+            )
+        ])
+
+    buttons.append([
+        InlineKeyboardButton(
+            text=TEXTS[lang]["photo_button"],
+            callback_data="send_photo"
+        )
+    ])
+
+    return InlineKeyboardMarkup(inline_keyboard=buttons)
+
+
+def get_language_name(lang: str) -> str:
+    names = {
+        "ru": "Русский 🇷🇺",
+        "en": "English 🇬🇧",
+        "hy": "Հայերեն 🇦🇲",
+    }
+    return names.get(lang, "Русский 🇷🇺")
 
 
 def build_weather_text(lang: str, data: dict, status_key: str) -> str:
@@ -150,10 +163,35 @@ def build_morning_notification_text(lang: str, data: dict, status_key: str) -> s
 
 @dp.message(Command("start"))
 async def start_handler(message: Message):
-    ensure_user(message.chat.id)
+    chat_id = message.chat.id
+    ensure_user(chat_id)
+
+    lang = get_user_language(chat_id)
+
+    if not lang:
+        await message.answer(
+            TEXTS["ru"]["welcome"],
+            reply_markup=language_keyboard(),
+        )
+        return
+
+    subscription_text = (
+        TEXTS[lang]["subscription_on"]
+        if is_user_subscribed(chat_id)
+        else TEXTS[lang]["subscription_off"]
+    )
+
+    text = (
+        f"<b>🏔 Ararat Now</b>\n\n"
+        f"{TEXTS[lang]['start_ready']}\n\n"
+        f"{TEXTS[lang]['current_language_label']}: <b>{get_language_name(lang)}</b>\n"
+        f"🔔 {subscription_text}\n\n"
+        f"{TEXTS[lang]['start_hint']}"
+    )
+
     await message.answer(
-        TEXTS["ru"]["welcome"],
-        reply_markup=language_keyboard(),
+        text,
+        reply_markup=action_keyboard(lang, chat_id),
     )
 
 
@@ -172,7 +210,7 @@ async def callback_handler(callback: CallbackQuery):
         lang = "ru"
         await callback.message.answer(
             f"{TEXTS[lang]['language_set']}\n\n{TEXTS[lang]['check_prompt']}",
-            reply_markup=subscribe_keyboard(lang, chat_id),
+            reply_markup=action_keyboard(lang, chat_id),
         )
 
     elif data == "lang_en":
@@ -181,7 +219,7 @@ async def callback_handler(callback: CallbackQuery):
         lang = "en"
         await callback.message.answer(
             f"{TEXTS[lang]['language_set']}\n\n{TEXTS[lang]['check_prompt']}",
-            reply_markup=subscribe_keyboard(lang, chat_id),
+            reply_markup=action_keyboard(lang, chat_id),
         )
 
     elif data == "lang_hy":
@@ -190,7 +228,7 @@ async def callback_handler(callback: CallbackQuery):
         lang = "hy"
         await callback.message.answer(
             f"{TEXTS[lang]['language_set']}\n\n{TEXTS[lang]['check_prompt']}",
-            reply_markup=subscribe_keyboard(lang, chat_id),
+            reply_markup=action_keyboard(lang, chat_id),
         )
 
     elif data == "subscribe":
@@ -199,7 +237,7 @@ async def callback_handler(callback: CallbackQuery):
         subscribe_user(chat_id)
         await callback.message.answer(
             TEXTS[lang]["subscribed_text"],
-            reply_markup=subscribe_keyboard(lang, chat_id),
+            reply_markup=action_keyboard(lang, chat_id),
         )
 
     elif data == "unsubscribe":
@@ -208,8 +246,12 @@ async def callback_handler(callback: CallbackQuery):
         unsubscribe_user(chat_id)
         await callback.message.answer(
             TEXTS[lang]["unsubscribed_text"],
-            reply_markup=subscribe_keyboard(lang, chat_id),
+            reply_markup=action_keyboard(lang, chat_id),
         )
+
+    elif data == "send_photo":
+        lang = get_user_language(chat_id) or "ru"
+        await callback.message.answer(TEXTS[lang]["photo_prompt"])
 
     await callback.answer()
 
@@ -222,7 +264,7 @@ async def subscribe_command(message: Message):
     subscribe_user(chat_id)
     await message.answer(
         TEXTS[lang]["subscribed_text"],
-        reply_markup=subscribe_keyboard(lang, chat_id),
+        reply_markup=action_keyboard(lang, chat_id),
     )
 
 
@@ -234,7 +276,7 @@ async def unsubscribe_command(message: Message):
     unsubscribe_user(chat_id)
     await message.answer(
         TEXTS[lang]["unsubscribed_text"],
-        reply_markup=subscribe_keyboard(lang, chat_id),
+        reply_markup=action_keyboard(lang, chat_id),
     )
 
 
@@ -258,6 +300,35 @@ async def check_now_handler(message: Message):
         print("=== FULL ERROR /check_now ===")
         traceback.print_exc()
         await message.answer(f"Ошибка: {repr(e)}")
+
+
+@dp.message()
+async def handle_photo(message: Message):
+    if not message.photo:
+        return
+
+    chat_id = message.chat.id
+    ensure_user(chat_id)
+    lang = get_user_language(chat_id) or "ru"
+
+    try:
+        caption = (
+            f"{TEXTS[lang]['photo_caption_prefix']}\n"
+            f"From chat_id: {chat_id}"
+        )
+
+        if ADMIN_CHAT_ID:
+            await bot.send_photo(
+                chat_id=int(ADMIN_CHAT_ID),
+                photo=message.photo[-1].file_id,
+                caption=caption,
+            )
+
+        await message.answer(TEXTS[lang]["photo_received"])
+
+    except Exception:
+        traceback.print_exc()
+        await message.answer(TEXTS[lang]["photo_received"])
 
 
 async def send_morning_notifications():
