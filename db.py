@@ -1,8 +1,16 @@
 import sqlite3
 from pathlib import Path
 
-DB_PATH = Path("bot_data.db")
+DATA_DIR = Path("/opt/render/project/src/data")
+DATA_DIR.mkdir(parents=True, exist_ok=True)
 
+DB_PATH = DATA_DIR / "bot_data.db"
+
+
+def get_connection():
+    conn = sqlite3.connect(DB_PATH)
+    conn.row_factory = sqlite3.Row
+    return conn
 
 def get_connection():
     conn = sqlite3.connect(DB_PATH)
