@@ -34,6 +34,8 @@ from db import (
     unsubscribe_user,
     is_user_subscribed,
     get_all_subscribed_users,
+    add_photo,
+    get_last_photos,
 )
 
 load_dotenv()
@@ -84,7 +86,11 @@ def action_keyboard(lang: str, chat_id: int):
         InlineKeyboardButton(
             text=TEXTS[lang]["photo_button"],
             callback_data="send_photo"
-        )
+        ),
+        InlineKeyboardButton(
+            text="🖼 Фото",
+            callback_data="photos"
+        ),
     ])
 
     return InlineKeyboardMarkup(inline_keyboard=buttons)
@@ -253,6 +259,14 @@ async def callback_handler(callback: CallbackQuery):
         lang = get_user_language(chat_id) or "ru"
         await callback.message.answer(TEXTS[lang]["photo_prompt"])
 
+    elif data == "photos":
+        photos = get_last_photos(5)
+        if not photos:
+            await callback.message.answer("Пока нет фото 🫠")
+        else:
+            for file_id in photos:
+                await callback.message.answer_photo(file_id)
+
     await callback.answer()
 
 
@@ -302,6 +316,18 @@ async def check_now_handler(message: Message):
         await message.answer(f"Ошибка: {repr(e)}")
 
 
+@dp.message(Command("photos"))
+async def photos_handler(message: Message):
+    photos = get_last_photos(5)
+
+    if not photos:
+        await message.answer("Пока нет фото 🫠")
+        return
+
+    for file_id in photos:
+        await message.answer_photo(file_id)
+
+
 @dp.message()
 async def handle_photo(message: Message):
     if not message.photo:
@@ -312,34 +338,27 @@ async def handle_photo(message: Message):
     lang = get_user_language(chat_id) or "ru"
 
     try:
-        print("=== PHOTO DEBUG START ===")
-        print("USER CHAT ID =", chat_id)
-        print("ADMIN_CHAT_ID =", ADMIN_CHAT_ID)
-        print("PHOTO FILE ID =", message.photo[-1].file_id)
+        file_id = message.photo[-1].file_id
+        add_photo(chat_id, file_id)
 
         caption = (
             f"{TEXTS[lang]['photo_caption_prefix']}\n"
             f"From chat_id: {chat_id}"
         )
 
-        if not ADMIN_CHAT_ID:
-            await message.answer("Ошибка: ADMIN_CHAT_ID не найден в Environment Variables")
-            print("ERROR: ADMIN_CHAT_ID is missing")
-            return
-
-        await bot.send_photo(
-            chat_id=int(ADMIN_CHAT_ID),
-            photo=message.photo[-1].file_id,
-            caption=caption,
-        )
+        if ADMIN_CHAT_ID:
+            await bot.send_photo(
+                chat_id=int(ADMIN_CHAT_ID),
+                photo=file_id,
+                caption=caption,
+            )
 
         await message.answer(TEXTS[lang]["photo_received"])
-        print("PHOTO SENT TO ADMIN OK")
-        print("=== PHOTO DEBUG END ===")
 
-    except Exception as e:
+    except Exception:
         traceback.print_exc()
-        await message.answer(f"Ошибка при отправке фото: {repr(e)}")
+        await message.answer(TEXTS[lang]["photo_received"])
+
 
 async def send_morning_notifications():
     users = get_all_subscribed_users()
