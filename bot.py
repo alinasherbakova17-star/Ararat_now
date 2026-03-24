@@ -312,24 +312,34 @@ async def handle_photo(message: Message):
     lang = get_user_language(chat_id) or "ru"
 
     try:
+        print("=== PHOTO DEBUG START ===")
+        print("USER CHAT ID =", chat_id)
+        print("ADMIN_CHAT_ID =", ADMIN_CHAT_ID)
+        print("PHOTO FILE ID =", message.photo[-1].file_id)
+
         caption = (
             f"{TEXTS[lang]['photo_caption_prefix']}\n"
             f"From chat_id: {chat_id}"
         )
 
-        if ADMIN_CHAT_ID:
-            await bot.send_photo(
-                chat_id=int(ADMIN_CHAT_ID),
-                photo=message.photo[-1].file_id,
-                caption=caption,
-            )
+        if not ADMIN_CHAT_ID:
+            await message.answer("Ошибка: ADMIN_CHAT_ID не найден в Environment Variables")
+            print("ERROR: ADMIN_CHAT_ID is missing")
+            return
+
+        await bot.send_photo(
+            chat_id=int(ADMIN_CHAT_ID),
+            photo=message.photo[-1].file_id,
+            caption=caption,
+        )
 
         await message.answer(TEXTS[lang]["photo_received"])
+        print("PHOTO SENT TO ADMIN OK")
+        print("=== PHOTO DEBUG END ===")
 
-    except Exception:
+    except Exception as e:
         traceback.print_exc()
-        await message.answer(TEXTS[lang]["photo_received"])
-
+        await message.answer(f"Ошибка при отправке фото: {repr(e)}")
 
 async def send_morning_notifications():
     users = get_all_subscribed_users()
