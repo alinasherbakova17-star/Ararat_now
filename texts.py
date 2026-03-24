@@ -1,6 +1,6 @@
 TEXTS = {
     "ru": {
-        "welcome": "🌅 Всем пламенный барев от Ararat Now\n\nЯ проверяю небо вместо тебя.\nУзнай, видно ли сегодня Арарат\n\nВыбери язык ↓",
+        "welcome": "🌅 Всем пламенный барев от Ararat Now\n\nЯ проверяю небо вместо тебя.\nУзнай, видно ли сегодня Арарат.\n\nВыбери язык ↓",
         "language_set": "Язык переключен на русский 🇷🇺",
         "check_prompt": "Напиши /check_now, чтобы узнать, виден ли Арарат.",
         "no_language": "Сначала выбери язык через /start",
@@ -83,10 +83,12 @@ TEXTS = {
             "evening": ["Закат добавляет драмы"],
             "night": ["Ночью уже больше про настроение, чем про детали"],
         },
+
+        "best_photo_day_caption": "📸 Лучшее фото дня\n\nСегодня Арарат поймали так 👀",
     },
 
     "en": {
-        "welcome": "🌅 Warm greetings from Ararat Now\n\nI check the sky for you.\nSee if Ararat is visible today\n\nChoose language ↓",
+        "welcome": "🌅 Warm greetings from Ararat Now\n\nI check the sky for you.\nSee if Ararat is visible today.\n\nChoose language ↓",
         "language_set": "Language set to English 🇬🇧",
         "check_prompt": "Send /check_now to see if Ararat is visible.",
         "no_language": "Please choose language via /start first",
@@ -117,12 +119,12 @@ TEXTS = {
         "decision_label": "Decision",
 
         "excellent": [
-            "Perfect view today",
+            "Ararat looks like a postcard today",
             "It’s out and not hiding",
             "One of those rare ideal days",
         ],
         "good": [
-            "Good visibility today",
+            "Ararat is clearly visible",
             "Pretty clear, worth catching",
             "A solid chance today",
         ],
@@ -169,10 +171,12 @@ TEXTS = {
             "evening": ["Sunset adds drama"],
             "night": ["At night it’s more about mood than detail"],
         },
+
+        "best_photo_day_caption": "📸 Photo of the day\n\nThis is how Ararat looked today 👀",
     },
 
     "hy": {
-        "welcome": "🌅 Բարև Ararat Now-ից\n\nԵս ստուգում եմ երկինքը քեզ համար։\nՏես՝ երևում է Արարատը այսօր թե ոչ\n\nԸնտրիր լեզուն ↓",
+        "welcome": "🌅 Բարև Ararat Now-ից\n\nԵս ստուգում եմ երկինքը քեզ համար։\nՏես՝ երևում է Արարատը այսօր թե ոչ։\n\nԸնտրիր լեզուն ↓",
         "language_set": "Լեզուն փոխվեց հայերեն 🇦🇲",
         "check_prompt": "Գրիր /check_now՝ տեսնելու համար՝ երևում է Արարատը։",
         "no_language": "Սկզբում ընտրիր լեզուն /start-ով",
@@ -184,7 +188,7 @@ TEXTS = {
         "subscribed_text": "Ես քեզ առավոտյան կգրեմ 🌅",
         "unsubscribed_text": "Լավ, այլևս չեմ անհանգստացնի",
 
-        "photo_prompt": "Ուղարկիր Արարատի լուսանկար, և ես կֆիքսեմ պահը 📸",
+        "photo_prompt": "Ուղարկիր ինձ Արարատի լուսանկար, և ես կֆիքսեմ պահը 📸",
         "photo_received": "📸 Լուսանկարը ընդունված է։ Պահը ֆիքսված է։",
         "photo_caption_prefix": "Արարատի նոր լուսանկար",
 
@@ -255,5 +259,7 @@ TEXTS = {
             "evening": ["Մայրամուտը դրամա է ավելացնում"],
             "night": ["Գիշերը սա ավելի շատ տրամադրության մասին է"],
         },
+
+        "best_photo_day_caption": "📸 Օրվա լավագույն լուսանկարը\n\nԱյսպես են այսօր բռնել Արարատը 👀",
     },
 }
