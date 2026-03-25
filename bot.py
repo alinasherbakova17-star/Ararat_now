@@ -85,12 +85,12 @@ def action_keyboard(lang: str, chat_id: int):
             )
         ])
 
- buttons.append([
+        buttons.append([
         InlineKeyboardButton(
             text=TEXTS[lang]["photo_button"],
             callback_data="send_photo"
-        )
-    ])
+            )
+        ])
 
     return InlineKeyboardMarkup(inline_keyboard=buttons)
 
