@@ -85,16 +85,7 @@ def action_keyboard(lang: str, chat_id: int):
             )
         ])
 
-    buttons.append([
-        InlineKeyboardButton(
-            text=TEXTS[lang]["photo_button"],
-            callback_data="send_photo"
-        ),
-        InlineKeyboardButton(
-            text="🖼 Фото",
-            callback_data="photos"
-        ),
-    ])
+
 
     return InlineKeyboardMarkup(inline_keyboard=buttons)
 
@@ -262,14 +253,7 @@ async def callback_handler(callback: CallbackQuery):
         lang = get_user_language(chat_id) or "ru"
         await callback.message.answer(TEXTS[lang]["photo_prompt"])
 
-    elif data == "photos":
-        photos = get_last_photos(5)
-        if not photos:
-            await callback.message.answer("Пока нет фото 🫠")
-        else:
-            for file_id in photos:
-                await callback.message.answer_photo(file_id)
-
+   
     await callback.answer()
 
 
