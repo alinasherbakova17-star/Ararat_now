@@ -40,7 +40,6 @@ from db import (
     get_best_photo_of_day,
 )
 
-
 load_dotenv()
 
 TOKEN = os.getenv("BOT_TOKEN")
@@ -85,12 +84,12 @@ def action_keyboard(lang: str, chat_id: int):
             )
         ])
 
-        buttons.append([
+    buttons.append([
         InlineKeyboardButton(
             text=TEXTS[lang]["photo_button"],
             callback_data="send_photo"
-            )
-        ])
+        )
+    ])
 
     return InlineKeyboardMarkup(inline_keyboard=buttons)
 
@@ -164,6 +163,15 @@ def build_morning_notification_text(lang: str, data: dict, status_key: str) -> s
     )
 
     return text
+
+
+def build_best_photo_caption(lang: str = "ru") -> str:
+    captions = {
+        "ru": "📸 Лучшее фото дня\n\nСегодня Арарат поймали так 👀",
+        "en": "📸 Photo of the day\n\nThis is how Ararat looked today 👀",
+        "hy": "📸 Օրվա լավագույն լուսանկարը\n\nԱյսպես են այսօր բռնել Արարատը 👀",
+    }
+    return captions.get(lang, captions["ru"])
 
 
 @dp.message(Command("start"))
@@ -258,7 +266,6 @@ async def callback_handler(callback: CallbackQuery):
         lang = get_user_language(chat_id) or "ru"
         await callback.message.answer(TEXTS[lang]["photo_prompt"])
 
-   
     await callback.answer()
 
 
@@ -308,16 +315,60 @@ async def check_now_handler(message: Message):
         await message.answer(f"Ошибка: {repr(e)}")
 
 
-@dp.message(Command("photos"))
-async def photos_handler(message: Message):
-    photos = get_last_photos(5)
-
-    if not photos:
-        await message.answer("Пока нет фото 🫠")
+@dp.message(Command("best_today"))
+async def best_today_handler(message: Message):
+    if str(message.chat.id) != str(ADMIN_CHAT_ID):
         return
 
-    for file_id in photos:
-        await message.answer_photo(file_id)
+    parts = message.text.split()
+
+    if len(parts) < 2:
+        await message.answer("Используй так: /best_today 12")
+        return
+
+    try:
+        photo_id = int(parts[1])
+    except ValueError:
+        await message.answer("photo_id должен быть числом")
+        return
+
+    photo = get_photo_by_id(photo_id)
+
+    if not photo:
+        await message.answer("Фото с таким id не найдено")
+        return
+
+    set_best_photo_of_day(photo_id)
+    await message.answer(f"Фото {photo_id} выбрано как фото дня 📸")
+
+
+@dp.message(Command("send_best_now"))
+async def send_best_now_handler(message: Message):
+    if str(message.chat.id) != str(ADMIN_CHAT_ID):
+        return
+
+    best_photo = get_best_photo_of_day()
+
+    if not best_photo:
+        await message.answer("Фото дня пока не выбрано")
+        return
+
+    users = get_all_subscribed_users()
+
+    sent = 0
+    for user_id in users:
+        try:
+            lang = get_user_language(user_id) or "ru"
+            await bot.send_photo(
+                chat_id=user_id,
+                photo=best_photo["file_id"],
+                caption=build_best_photo_caption(lang),
+            )
+            sent += 1
+        except Exception:
+            traceback.print_exc()
+
+    await message.answer(f"Фото дня отправлено: {sent} пользователям")
 
 
 @dp.message()
@@ -331,11 +382,12 @@ async def handle_photo(message: Message):
 
     try:
         file_id = message.photo[-1].file_id
-        add_photo(chat_id, file_id)
+        photo_id = add_photo(chat_id, file_id)
 
         caption = (
             f"{TEXTS[lang]['photo_caption_prefix']}\n"
-            f"From chat_id: {chat_id}"
+            f"photo_id: {photo_id}\n"
+            f"from chat_id: {chat_id}"
         )
 
         if ADMIN_CHAT_ID:
@@ -372,12 +424,41 @@ async def send_morning_notifications():
             traceback.print_exc()
 
 
+async def send_evening_best_photo():
+    best_photo = get_best_photo_of_day()
+
+    if not best_photo:
+        print("No best photo selected for evening push")
+        return
+
+    users = get_all_subscribed_users()
+
+    for user_id in users:
+        try:
+            lang = get_user_language(user_id) or "ru"
+            await bot.send_photo(
+                chat_id=user_id,
+                photo=best_photo["file_id"],
+                caption=build_best_photo_caption(lang),
+            )
+        except Exception:
+            print(f"=== ERROR evening best photo user_id={user_id} ===")
+            traceback.print_exc()
+
+
 async def main():
     init_db()
+
     scheduler.add_job(
         send_morning_notifications,
         CronTrigger(hour=10, minute=0, timezone="Asia/Yerevan")
     )
+
+    scheduler.add_job(
+        send_evening_best_photo,
+        CronTrigger(hour=19, minute=0, timezone="Asia/Yerevan")
+    )
+
     scheduler.start()
     await dp.start_polling(bot)
 
