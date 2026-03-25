@@ -35,8 +35,11 @@ from db import (
     is_user_subscribed,
     get_all_subscribed_users,
     add_photo,
-    get_last_photos,
+    get_photo_by_id,
+    set_best_photo_of_day,
+    get_best_photo_of_day,
 )
+
 
 load_dotenv()
 
