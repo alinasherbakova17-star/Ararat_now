@@ -304,3 +304,34 @@ def get_today_users():
     result = cur.fetchone()["count"]
     conn.close()
     return result
+def get_total_users():
+    conn = get_connection()
+    cur = conn.cursor()
+
+    cur.execute("SELECT COUNT(*) as count FROM users")
+    result = cur.fetchone()["count"]
+
+    conn.close()
+    return result
+
+
+def get_total_subscribed():
+    conn = get_connection()
+    cur = conn.cursor()
+
+    cur.execute("SELECT COUNT(*) as count FROM users WHERE subscribed = 1")
+    result = cur.fetchone()["count"]
+
+    conn.close()
+    return result
+
+
+def get_photos_count():
+    conn = get_connection()
+    cur = conn.cursor()
+
+    cur.execute("SELECT COUNT(*) as count FROM photos")
+    result = cur.fetchone()["count"]
+
+    conn.close()
+    return result
