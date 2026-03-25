@@ -259,14 +259,14 @@ def get_best_photo_of_day():
     conn.close()
     return row
     def get_total_users():
-    conn = get_connection()
-    cur = conn.cursor()
+       conn = get_connection()
+       cur = conn.cursor()
 
-    cur.execute("SELECT COUNT(*) as count FROM users")
-    result = cur.fetchone()["count"]
+       cur.execute("SELECT COUNT(*) as count FROM users")
+       result = cur.fetchone()["count"]
 
-    conn.close()
-    return result
+       conn.close()
+       return result
 
 
 def get_total_subscribed():
