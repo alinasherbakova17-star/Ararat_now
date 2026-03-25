@@ -16,6 +16,11 @@ from aiogram.types import (
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from apscheduler.triggers.cron import CronTrigger
 from dotenv import load_dotenv
+from db import (
+    get_total_users,
+    get_total_subscribed,
+    get_photos_count,
+)
 
 from weather import (
     get_weather_data,
@@ -207,6 +212,29 @@ async def start_handler(message: Message):
         reply_markup=action_keyboard(lang, chat_id),
     )
 
+@dp.message(Command("stats"))
+async def stats_handler(message: Message):
+    # только админ
+    if str(message.chat.id) != str(ADMIN_CHAT_ID):
+        return
+
+    try:
+        total_users = get_total_users()
+        subscribed = get_total_subscribed()
+        photos = get_photos_count()
+
+        text = (
+            f"📊 <b>Ararat Now — статистика</b>\n\n"
+            f"👥 Всего пользователей: <b>{total_users}</b>\n"
+            f"🔔 Подписаны: <b>{subscribed}</b>\n"
+            f"📸 Фото в базе: <b>{photos}</b>\n"
+        )
+
+        await message.answer(text)
+
+    except Exception as e:
+        traceback.print_exc()
+        await message.answer(f"Ошибка: {repr(e)}")
 
 @dp.callback_query()
 async def callback_handler(callback: CallbackQuery):
