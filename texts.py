@@ -60,6 +60,11 @@ TEXTS = {
             "Смог съел весь вид",
             "Воздух против нас",
         ],
+        "covered": [ 
+            "Арарат сегодня закрыт облаками ☁️",
+            "Облака полностью спрятали гору",
+            "Сегодня не небо с характером, а сплошная завеса",
+        ],
 
         "air_status": {
             "air_clean": "воздух чистый",
@@ -75,6 +80,7 @@ TEXTS = {
             "medium": "если приглядеться — увидишь",
             "bad": "сегодня лучше не надеяться",
             "smog": "воздух сильно портит картину",
+            "covered": "гора закрыта облаками, сегодня лучше не ждать вида",
         },
 
         "time_tail": {
@@ -148,6 +154,11 @@ TEXTS = {
             "Smog ate the whole view",
             "Air is against us",
         ],
+        "covered": [
+            "Ararat is covered by clouds today ☁️",
+            "The mountain is fully hidden by clouds",
+            "This is not drama, this is a full cloud curtain",
+        ],
 
         "air_status": {
             "air_clean": "air is clean",
@@ -163,6 +174,7 @@ TEXTS = {
             "medium": "you may catch it if you look carefully",
             "bad": "better not count on it today",
             "smog": "air conditions ruin the view",
+            "covered": "the mountain is covered by clouds, not a day to expect the view",
         },
 
         "time_tail": {
@@ -236,6 +248,11 @@ TEXTS = {
             "Մշուշը կերել է տեսարանը",
             "Օդը մեր դեմ է",
         ],
+        "covered": [
+            "Այսօր Արարատը փակված է ամպերով ☁️",
+            "Ամպերը ամբողջությամբ թաքցրել են լեռը",
+            "Այսօր դա պարզապես ամպային վարագույր է",
+        ],
 
         "air_status": {
             "air_clean": "օդը մաքուր է",
@@ -251,6 +268,7 @@ TEXTS = {
             "medium": "եթե ուշադիր նայես՝ կտեսնես",
             "bad": "այսօր լավ է չհույս դնել",
             "smog": "օդը փչացնում է տեսարանը",
+            "covered": "լեռը փակված է ամպերով, այսօր լավ չէ տեսարան սպասել",
         },
 
         "time_tail": {

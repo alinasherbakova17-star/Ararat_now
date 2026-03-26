@@ -74,33 +74,39 @@ def get_sky_text(lang: str, clouds: int) -> str:
     sky_map = {
         "ru": {
             "clear": "ясно",
-            "few": "небольшая облачность",
+            "few": "почти чистое небо",
+            "soft": "мягкие облака",
             "cloudy": "облачно",
-            "overcast": "пасмурно",
+            "dense": "плотная облачность",
         },
         "en": {
             "clear": "clear",
-            "few": "few clouds",
+            "few": "almost clear",
+            "soft": "soft clouds",
             "cloudy": "cloudy",
-            "overcast": "overcast",
+            "dense": "dense clouds",
         },
         "hy": {
             "clear": "պարզ է",
-            "few": "թեթև ամպամածություն",
+            "few": "գրեթե պարզ",
+            "soft": "փափուկ ամպեր",
             "cloudy": "ամպամած",
-            "overcast": "մռայլ է",
+            "dense": "խիտ ամպամածություն",
         },
     }
 
     local = sky_map.get(lang, sky_map["en"])
 
-    if clouds < 15:
+    if clouds < 10:
         return local["clear"]
-    if clouds < 40:
+    elif clouds < 30:
         return local["few"]
-    if clouds < 75:
+    elif clouds < 60:
+        return local["soft"]
+    elif clouds < 90:
         return local["cloudy"]
-    return local["overcast"]
+    else:
+        return local["dense"]
 
 
 def get_ararat_status(data: dict) -> str:
@@ -110,21 +116,31 @@ def get_ararat_status(data: dict) -> str:
     pm25 = data["pm25"]
     pm10 = data["pm10"]
 
+    # смог
     if aqi >= 4 or pm25 >= 35 or pm10 >= 50:
         return "smog"
 
+    # реально плохая видимость
     if visibility < 4000:
         return "bad"
 
-    if visibility >= 9000 and clouds <= 35:
+    # гора закрыта облаками
+    if visibility >= 9000 and clouds >= 90:
+        return "covered"
+
+    # идеально
+    if visibility >= 9000 and clouds <= 20:
         return "excellent"
 
-    if visibility >= 9000 and clouds <= 65:
+    # хорошо видно
+    if visibility >= 9000 and clouds <= 50:
         return "good"
 
-    if visibility >= 9000 and clouds > 65:
+    # облака уже заметно мешают
+    if visibility >= 9000 and clouds < 90:
         return "cloudy"
 
+    # средняя видимость
     if 4000 <= visibility < 9000:
         return "medium"
 
