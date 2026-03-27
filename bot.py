@@ -115,7 +115,11 @@ def build_weather_text(lang: str, data: dict, status_key: str) -> str:
     sky_text = get_sky_text(lang, data["clouds"])
 
     status_line = random.choice(TEXTS[lang][status_key])
-    time_tail = random.choice(TEXTS[lang]["time_tail"][time_mode])
+    if status_key in ("good", "excellent"):
+        time_tail = random.choice(TEXTS[lang]["time_tail"][time_mode])
+    else:
+        time_tail = ""  
+        
     air_line = TEXTS[lang]["air_status"][air_key]
     decision_line = TEXTS[lang]["decision_text"][status_key]
 
