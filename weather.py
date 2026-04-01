@@ -6,6 +6,7 @@ import certifi
 import requests
 from dotenv import load_dotenv
 
+# SSL фикс для Render
 os.environ["SSL_CERT_FILE"] = certifi.where()
 os.environ["REQUESTS_CA_BUNDLE"] = certifi.where()
 os.environ["CURL_CA_BUNDLE"] = certifi.where()
@@ -18,12 +19,16 @@ LAT = 40.1872
 LON = 44.5152
 
 
+# ------------------------
+# язык API
+# ------------------------
 def map_lang_for_weather(lang: str) -> str:
-    if lang == "ru":
-        return "ru"
-    return "en"
+    return "ru" if lang == "ru" else "en"
 
 
+# ------------------------
+# получение данных
+# ------------------------
 def get_weather_data(lang="ru"):
     weather_lang = map_lang_for_weather(lang)
 
@@ -70,28 +75,34 @@ def get_weather_data(lang="ru"):
     }
 
 
+# ------------------------
+# текст неба (С COVERED)
+# ------------------------
 def get_sky_text(lang: str, clouds: int) -> str:
     sky_map = {
         "ru": {
             "clear": "ясно",
-            "few": "почти чистое небо",
-            "soft": "мягкие облака",
+            "few": "лёгкие облака",
+            "soft": "переменная облачность",
             "cloudy": "облачно",
-            "dense": "плотная облачность",
+            "dense": "плотные облака",
+            "covered": "полностью закрыто",
         },
         "en": {
             "clear": "clear",
-            "few": "almost clear",
-            "soft": "soft clouds",
+            "few": "few clouds",
+            "soft": "partly cloudy",
             "cloudy": "cloudy",
             "dense": "dense clouds",
+            "covered": "fully covered",
         },
         "hy": {
             "clear": "պարզ է",
-            "few": "գրեթե պարզ",
-            "soft": "փափուկ ամպեր",
+            "few": "թեթև ամպամածություն",
+            "soft": "փոփոխական ամպամածություն",
             "cloudy": "ամպամած",
-            "dense": "խիտ ամպամածություն",
+            "dense": "խիտ ամպեր",
+            "covered": "ամբողջությամբ փակ է",
         },
     }
 
@@ -99,17 +110,98 @@ def get_sky_text(lang: str, clouds: int) -> str:
 
     if clouds < 10:
         return local["clear"]
-    elif clouds < 30:
+    if clouds < 30:
         return local["few"]
-    elif clouds < 60:
+    if clouds < 60:
         return local["soft"]
-    elif clouds < 90:
+    if clouds < 80:
         return local["cloudy"]
-    else:
+    if clouds < 95:
         return local["dense"]
 
+    return local["covered"]
 
-def get_ararat_status(data: dict) -> str:
+
+# ------------------------
+# воздух
+# ------------------------
+def get_air_status(data: dict) -> str:
+    aqi = data["aqi"]
+    pm25 = data["pm25"]
+
+    if aqi <= 2 and pm25 <= 15:
+        return "air_clean"
+    if aqi == 3 and pm25 <= 35:
+        return "air_ok"
+    if aqi == 4 or pm25 <= 55:
+        return "air_heavy"
+    return "air_bad"
+
+
+# ------------------------
+# SCORE система
+# ------------------------
+def calculate_ararat_score(data: dict, crowd_bonus: int = 0) -> int:
+    visibility = data["visibility"]
+    clouds = data["clouds"]
+    air_status = get_air_status(data)
+
+    # visibility
+    if visibility >= 10000:
+        visibility_score = 50
+    elif visibility >= 8000:
+        visibility_score = 40
+    elif visibility >= 6000:
+        visibility_score = 30
+    elif visibility >= 4000:
+        visibility_score = 20
+    else:
+        visibility_score = 5
+
+    # air
+    air_scores = {
+        "air_clean": 30,
+        "air_ok": 22,
+        "air_heavy": 10,
+        "air_bad": 0,
+    }
+    air_score = air_scores.get(air_status, 0)
+
+    # clouds (НЕ убивают всё)
+    if clouds <= 20:
+        clouds_score = 20
+    elif clouds <= 40:
+        clouds_score = 16
+    elif clouds <= 60:
+        clouds_score = 12
+    elif clouds <= 80:
+        clouds_score = 8
+    else:
+        clouds_score = 4
+
+    total = visibility_score + air_score + clouds_score + crowd_bonus
+    return min(total, 100)
+
+
+# ------------------------
+# confidence
+# ------------------------
+def get_visibility_confidence(data: dict) -> str:
+    visibility = data["visibility"]
+    clouds = data["clouds"]
+    air_status = get_air_status(data)
+
+    if visibility >= 9000 and air_status in ("air_clean", "air_ok") and clouds <= 60:
+        return "high"
+    if visibility >= 7000 and air_status != "air_bad":
+        return "medium"
+    return "low"
+
+
+# ------------------------
+# ГЛАВНАЯ ЛОГИКА (с covered)
+# ------------------------
+def get_ararat_status_from_score(score: int, data: dict) -> str:
     visibility = data["visibility"]
     clouds = data["clouds"]
     aqi = data["aqi"]
@@ -120,49 +212,36 @@ def get_ararat_status(data: dict) -> str:
     if aqi >= 4 or pm25 >= 35 or pm10 >= 50:
         return "smog"
 
-    # реально плохая видимость
-    if visibility < 4000:
+    # 🔥 если всё закрыто
+    if clouds >= 95:
+        if visibility >= 9000:
+            return "covered"
         return "bad"
 
-    # гора закрыта облаками
-    if visibility >= 9000 and clouds >= 90:
-        return "covered"
+    # 🔥 если видно далеко — не убиваем облаками
+    if visibility >= 9000:
+        if clouds < 40:
+            return "excellent"
+        elif clouds < 80:
+            return "good"
+        else:
+            return "cloudy"
 
-    # идеально
-    if visibility >= 9000 and clouds <= 20:
+    # fallback
+    if score >= 80:
         return "excellent"
-
-    # хорошо видно
-    if visibility >= 9000 and clouds <= 50:
+    if score >= 65:
         return "good"
-
-    # облака уже заметно мешают
-    if visibility >= 9000 and clouds < 90:
+    if score >= 45:
         return "cloudy"
-
-    # средняя видимость
-    if 4000 <= visibility < 9000:
+    if score >= 25:
         return "medium"
-
-    return "medium"
-
-
-def get_air_status(data: dict) -> str:
-    aqi = data["aqi"]
-    pm25 = data["pm25"]
-
-    if aqi <= 2 and pm25 <= 15:
-        return "air_clean"
-
-    if aqi == 3 and pm25 <= 35:
-        return "air_ok"
-
-    if aqi == 4 or pm25 <= 55:
-        return "air_heavy"
-
-    return "air_bad"
+    return "bad"
 
 
+# ------------------------
+# время суток
+# ------------------------
 def get_time_mode() -> str:
     now = datetime.now(ZoneInfo("Asia/Yerevan"))
     hour = now.hour
