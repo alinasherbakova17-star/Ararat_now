@@ -23,7 +23,6 @@ from weather import (
     get_time_mode,
     get_sky_text,
     calculate_ararat_score,
-    get_visibility_confidence,
     get_ararat_status_from_score,
 )
 from texts import TEXTS
@@ -59,6 +58,60 @@ dp = Dispatcher()
 scheduler = AsyncIOScheduler(timezone="Asia/Yerevan")
 
 
+def t(lang: str, key: str, default=""):
+    return TEXTS.get(lang, {}).get(key, default)
+
+
+def pick_from_list(values, default: str = "") -> str:
+    if isinstance(values, list) and values:
+        return random.choice(values)
+    if isinstance(values, str):
+        return values
+    return default
+
+
+def safe_status_line(lang: str, status_key: str) -> str:
+    return pick_from_list(
+        TEXTS.get(lang, {}).get(status_key),
+        pick_from_list(TEXTS.get("ru", {}).get(status_key), status_key),
+    )
+
+
+def safe_oracle_phrase(lang: str, status_key: str) -> str:
+    oracle_block = TEXTS.get(lang, {}).get("oracle", {})
+    phrases = oracle_block.get(status_key)
+
+    if not phrases:
+        phrases = TEXTS.get("ru", {}).get("oracle", {}).get(status_key)
+
+    return pick_from_list(phrases, "Сегодня лучше просто наблюдать.")
+
+
+def safe_air_line(lang: str, air_key: str) -> str:
+    return (
+        TEXTS.get(lang, {}).get("air_status", {}).get(
+            air_key,
+            TEXTS.get("ru", {}).get("air_status", {}).get(air_key, air_key),
+        )
+    )
+
+
+def safe_decision_line(lang: str, status_key: str) -> str:
+    return (
+        TEXTS.get(lang, {}).get("decision_text", {}).get(
+            status_key,
+            TEXTS.get("ru", {}).get("decision_text", {}).get(status_key, status_key),
+        )
+    )
+
+
+def safe_time_tail(lang: str, time_mode: str) -> str:
+    values = TEXTS.get(lang, {}).get("time_tail", {}).get(time_mode)
+    if not values:
+        values = TEXTS.get("ru", {}).get("time_tail", {}).get(time_mode, [])
+    return pick_from_list(values, "")
+
+
 def language_keyboard():
     return InlineKeyboardMarkup(
         inline_keyboard=[
@@ -77,28 +130,34 @@ def action_keyboard(lang: str, chat_id: int):
     if is_user_subscribed(chat_id):
         rows.append([
             InlineKeyboardButton(
-                text=TEXTS[lang]["unsubscribe_button"],
+                text=t(lang, "unsubscribe_button", "🔕 Отключить"),
                 callback_data="unsubscribe"
             )
         ])
     else:
         rows.append([
             InlineKeyboardButton(
-                text=TEXTS[lang]["subscribe_button"],
+                text=t(lang, "subscribe_button", "🔔 Включить"),
                 callback_data="subscribe"
             )
         ])
 
     rows.append([
         InlineKeyboardButton(
-            text=TEXTS[lang]["photo_button"],
+            text=t(lang, "photo_button", "📸 Отправить фото"),
             callback_data="send_photo"
         )
     ])
 
+    oracle_label = {
+        "ru": "🔮 Оракул",
+        "en": "🔮 Oracle",
+        "hy": "🔮 Օրաքուլ",
+    }.get(lang, "🔮 Оракул")
+
     rows.append([
         InlineKeyboardButton(
-            text="🔮 Oracle" if lang == "en" else ("🔮 Օրաքուլ" if lang == "hy" else "🔮 Оракул"),
+            text=oracle_label,
             callback_data="oracle"
         )
     ])
@@ -107,12 +166,16 @@ def action_keyboard(lang: str, chat_id: int):
 
 
 def get_language_name(lang: str) -> str:
-    names = {
+    return {
         "ru": "Русский 🇷🇺",
         "en": "English 🇬🇧",
         "hy": "Հայերեն 🇦🇲",
-    }
-    return names.get(lang, "Русский 🇷🇺")
+    }.get(lang, "Русский 🇷🇺")
+
+
+def get_status_with_score(data: dict) -> str:
+    score = calculate_ararat_score(data, crowd_bonus=0)
+    return get_ararat_status_from_score(score, data)
 
 
 def build_weather_text(lang: str, data: dict, status_key: str) -> str:
@@ -121,15 +184,11 @@ def build_weather_text(lang: str, data: dict, status_key: str) -> str:
     time_mode = get_time_mode()
     sky_text = get_sky_text(lang, data["clouds"])
 
-    status_line = random.choice(TEXTS[lang][status_key])
-    air_line = TEXTS[lang]["air_status"][air_key]
-    decision_line = TEXTS[lang]["decision_text"][status_key]
+    status_line = safe_status_line(lang, status_key)
+    air_line = safe_air_line(lang, air_key)
+    decision_line = safe_decision_line(lang, status_key)
 
-    if status_key in ("good", "excellent"):
-        time_tail = random.choice(TEXTS[lang]["time_tail"][time_mode])
-    else:
-        time_tail = ""
-
+    time_tail = safe_time_tail(lang, time_mode) if status_key in ("good", "excellent") else ""
     tail_block = f"\n\n{time_tail}" if time_tail else ""
 
     text = (
@@ -145,7 +204,6 @@ def build_weather_text(lang: str, data: dict, status_key: str) -> str:
         f"🎯 {t(lang, 'decision_label', 'Вердикт')}: <i>{decision_line}</i>"
         f"{tail_block}"
     )
-
     return text
 
 
@@ -153,21 +211,22 @@ def build_morning_notification_text(lang: str, data: dict, status_key: str) -> s
     visibility_km = round(data["visibility"] / 1000, 1)
     air_key = get_air_status(data)
 
-    status_line = random.choice(TEXTS[lang][status_key])
-    air_line = TEXTS[lang]["air_status"][air_key]
-    decision_line = TEXTS[lang]["decision_text"][status_key]
+    status_line = safe_status_line(lang, status_key)
+    air_line = safe_air_line(lang, air_key)
+    decision_line = safe_decision_line(lang, status_key)
 
     return (
         f"🏔 Ararat Now\n\n"
         f"{status_line}\n\n"
-        f"👀 {TEXTS[lang]['visibility_label']}: {visibility_km} km\n"
-        f"🌫 {TEXTS[lang]['air_label']}: {air_line}\n\n"
+        f"👀 {t(lang, 'visibility_label', 'Видимость')}: {visibility_km} km\n"
+        f"🌫 {t(lang, 'air_label', 'Воздух')}: {air_line}\n\n"
         f"🎯 {decision_line}"
     )
 
 
 def build_best_photo_caption(lang: str = "ru") -> str:
-    return TEXTS[lang].get(
+    return t(
+        lang,
         "best_photo_day_caption",
         "📸 Лучшее фото дня\n\nСегодня Арарат поймали так 👀"
     )
@@ -178,20 +237,12 @@ def should_send_notification(status_key: str, data: dict) -> bool:
 
     if status_key == "excellent":
         return True
-
     if status_key == "good" and air_key in ("air_clean", "air_ok"):
         return True
-
     if status_key == "smog":
         return True
 
     return False
-
-
-def get_status_with_score(data: dict) -> str:
-    crowd_bonus = 0
-    score = calculate_ararat_score(data, crowd_bonus=crowd_bonus)
-    return get_ararat_status_from_score(score, data)
 
 
 @dp.message(Command("start"))
@@ -203,22 +254,22 @@ async def start_handler(message: Message):
 
     if not lang:
         await message.answer(
-            TEXTS["ru"]["welcome"],
+            t("ru", "welcome", "🏔 Ararat Now\n\nВыбери язык:"),
             reply_markup=language_keyboard(),
         )
         return
 
     subscription_text = (
-        TEXTS[lang]["subscribed_text"]
+        t(lang, "subscribed_text", "Уведомления включены")
         if is_user_subscribed(chat_id)
-        else TEXTS[lang]["unsubscribed_text"]
+        else t(lang, "unsubscribed_text", "Уведомления отключены")
     )
 
     text = (
         f"<b>🏔 Ararat Now</b>\n\n"
-        f"{TEXTS[lang]['language_set']}: <b>{get_language_name(lang)}</b>\n"
+        f"{t(lang, 'language_set', 'Язык установлен')}: <b>{get_language_name(lang)}</b>\n"
         f"🔔 {subscription_text}\n\n"
-        f"{TEXTS[lang]['check_prompt']}"
+        f"{t(lang, 'check_prompt', 'Теперь можно проверить видимость')}"
     )
 
     await message.answer(
@@ -241,7 +292,7 @@ async def callback_handler(callback: CallbackQuery):
         set_user_language(chat_id, "ru")
         lang = "ru"
         await callback.message.answer(
-            f"{TEXTS[lang]['language_set']}\n\n{TEXTS[lang]['check_prompt']}",
+            f"{t(lang, 'language_set', 'Язык установлен')}\n\n{t(lang, 'check_prompt', '')}",
             reply_markup=action_keyboard(lang, chat_id),
         )
 
@@ -250,7 +301,7 @@ async def callback_handler(callback: CallbackQuery):
         set_user_language(chat_id, "en")
         lang = "en"
         await callback.message.answer(
-            f"{TEXTS[lang]['language_set']}\n\n{TEXTS[lang]['check_prompt']}",
+            f"{t(lang, 'language_set', 'Language set')}\n\n{t(lang, 'check_prompt', '')}",
             reply_markup=action_keyboard(lang, chat_id),
         )
 
@@ -259,7 +310,7 @@ async def callback_handler(callback: CallbackQuery):
         set_user_language(chat_id, "hy")
         lang = "hy"
         await callback.message.answer(
-            f"{TEXTS[lang]['language_set']}\n\n{TEXTS[lang]['check_prompt']}",
+            f"{t(lang, 'language_set', 'Լեզուն ընտրված է')}\n\n{t(lang, 'check_prompt', '')}",
             reply_markup=action_keyboard(lang, chat_id),
         )
 
@@ -268,7 +319,7 @@ async def callback_handler(callback: CallbackQuery):
         lang = get_user_language(chat_id) or "ru"
         subscribe_user(chat_id)
         await callback.message.answer(
-            TEXTS[lang]["subscribed_text"],
+            t(lang, "subscribed_text", "Уведомления включены"),
             reply_markup=action_keyboard(lang, chat_id),
         )
 
@@ -277,13 +328,15 @@ async def callback_handler(callback: CallbackQuery):
         lang = get_user_language(chat_id) or "ru"
         unsubscribe_user(chat_id)
         await callback.message.answer(
-            TEXTS[lang]["unsubscribed_text"],
+            t(lang, "unsubscribed_text", "Уведомления отключены"),
             reply_markup=action_keyboard(lang, chat_id),
         )
 
     elif data == "send_photo":
         lang = get_user_language(chat_id) or "ru"
-        await callback.message.answer(TEXTS[lang]["photo_prompt"])
+        await callback.message.answer(
+            t(lang, "photo_prompt", "Отправь фото Арарата 📸")
+        )
 
     elif data == "oracle":
         lang = get_user_language(chat_id) or "ru"
@@ -291,18 +344,15 @@ async def callback_handler(callback: CallbackQuery):
         try:
             data_weather = get_weather_data(lang)
             status_key = get_status_with_score(data_weather)
-            phrase = random.choice(TEXTS[lang]["oracle"][status_key])
+            phrase = safe_oracle_phrase(lang, status_key)
 
-            if lang == "ru":
-                title = "🔮 <b>Арарат сегодня говорит:</b>"
-            elif lang == "en":
-                title = "🔮 <b>Ararat says today:</b>"
-            else:
-                title = "🔮 <b>Արարատն այսօր ասում է․</b>"
+            title = {
+                "ru": "🔮 <b>Арарат сегодня говорит:</b>",
+                "en": "🔮 <b>Ararat says today:</b>",
+                "hy": "🔮 <b>Արարատն այսօր ասում է․</b>",
+            }.get(lang, "🔮 <b>Арарат сегодня говорит:</b>")
 
-            await callback.message.answer(
-                f"{title}\n\n<i>{phrase}</i>"
-            )
+            await callback.message.answer(f"{title}\n\n<i>{phrase}</i>")
 
         except Exception as e:
             traceback.print_exc()
@@ -318,7 +368,7 @@ async def subscribe_command(message: Message):
     lang = get_user_language(chat_id) or "ru"
     subscribe_user(chat_id)
     await message.answer(
-        TEXTS[lang]["subscribed_text"],
+        t(lang, "subscribed_text", "Уведомления включены"),
         reply_markup=action_keyboard(lang, chat_id),
     )
 
@@ -330,7 +380,7 @@ async def unsubscribe_command(message: Message):
     lang = get_user_language(chat_id) or "ru"
     unsubscribe_user(chat_id)
     await message.answer(
-        TEXTS[lang]["unsubscribed_text"],
+        t(lang, "unsubscribed_text", "Уведомления отключены"),
         reply_markup=action_keyboard(lang, chat_id),
     )
 
@@ -342,7 +392,7 @@ async def check_now_handler(message: Message):
     lang = get_user_language(chat_id)
 
     if not lang:
-        await message.answer(TEXTS["ru"]["no_language"])
+        await message.answer(t("ru", "no_language", "Сначала выбери язык"))
         return
 
     try:
@@ -366,14 +416,13 @@ async def oracle_handler(message: Message):
     try:
         data = get_weather_data(lang)
         status_key = get_status_with_score(data)
-        phrase = random.choice(TEXTS[lang]["oracle"][status_key])
+        phrase = safe_oracle_phrase(lang, status_key)
 
-        if lang == "ru":
-            title = "🔮 <b>Арарат сегодня говорит:</b>"
-        elif lang == "en":
-            title = "🔮 <b>Ararat says today:</b>"
-        else:
-            title = "🔮 <b>Արարատն այսօր ասում է․</b>"
+        title = {
+            "ru": "🔮 <b>Арарат сегодня говорит:</b>",
+            "en": "🔮 <b>Ararat says today:</b>",
+            "hy": "🔮 <b>Արարատն այսօր ասում է․</b>",
+        }.get(lang, "🔮 <b>Арарат сегодня говорит:</b>")
 
         await message.answer(f"{title}\n\n<i>{phrase}</i>")
 
@@ -476,7 +525,7 @@ async def handle_photo(message: Message):
         photo_id = add_photo(chat_id, file_id)
 
         caption = (
-            f"{TEXTS[lang]['photo_caption_prefix']}\n"
+            f"{t(lang, 'photo_caption_prefix', 'Новое фото Арарата')}\n"
             f"photo_id: {photo_id}\n"
             f"from chat_id: {chat_id}"
         )
@@ -488,11 +537,15 @@ async def handle_photo(message: Message):
                 caption=caption,
             )
 
-        await message.answer(TEXTS[lang]["photo_received"])
+        await message.answer(
+            t(lang, "photo_received", "📸 Фото принято.")
+        )
 
     except Exception:
         traceback.print_exc()
-        await message.answer(TEXTS[lang]["photo_received"])
+        await message.answer(
+            t(lang, "photo_received", "📸 Фото принято.")
+        )
 
 
 async def send_morning_notifications():
