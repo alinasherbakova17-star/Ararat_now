@@ -16,18 +16,15 @@ from aiogram.types import (
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from apscheduler.triggers.cron import CronTrigger
 from dotenv import load_dotenv
-from db import (
-    get_total_users,
-    get_total_subscribed,
-    get_photos_count,
-)
 
 from weather import (
     get_weather_data,
-    get_ararat_status,
     get_air_status,
     get_time_mode,
     get_sky_text,
+    calculate_ararat_score,
+    get_visibility_confidence,
+    get_ararat_status_from_score,
 )
 from texts import TEXTS
 from db import (
@@ -43,6 +40,9 @@ from db import (
     get_photo_by_id,
     set_best_photo_of_day,
     get_best_photo_of_day,
+    get_total_users,
+    get_total_subscribed,
+    get_photos_count,
 )
 
 load_dotenv()
@@ -72,31 +72,38 @@ def language_keyboard():
 
 
 def action_keyboard(lang: str, chat_id: int):
-    buttons = []
+    rows = []
 
     if is_user_subscribed(chat_id):
-        buttons.append([
+        rows.append([
             InlineKeyboardButton(
                 text=TEXTS[lang]["unsubscribe_button"],
                 callback_data="unsubscribe"
             )
         ])
     else:
-        buttons.append([
+        rows.append([
             InlineKeyboardButton(
                 text=TEXTS[lang]["subscribe_button"],
                 callback_data="subscribe"
             )
         ])
 
-    buttons.append([
+    rows.append([
         InlineKeyboardButton(
             text=TEXTS[lang]["photo_button"],
             callback_data="send_photo"
         )
     ])
 
-    return InlineKeyboardMarkup(inline_keyboard=buttons)
+    rows.append([
+        InlineKeyboardButton(
+            text="🔮 Oracle" if lang == "en" else ("🔮 Օրաքուլ" if lang == "hy" else "🔮 Оракул"),
+            callback_data="oracle"
+        )
+    ])
+
+    return InlineKeyboardMarkup(inline_keyboard=rows)
 
 
 def get_language_name(lang: str) -> str:
@@ -115,13 +122,13 @@ def build_weather_text(lang: str, data: dict, status_key: str) -> str:
     sky_text = get_sky_text(lang, data["clouds"])
 
     status_line = random.choice(TEXTS[lang][status_key])
+    air_line = TEXTS[lang]["air_status"][air_key]
+    decision_line = TEXTS[lang]["decision_text"][status_key]
+
     if status_key in ("good", "excellent"):
         time_tail = random.choice(TEXTS[lang]["time_tail"][time_mode])
     else:
-        time_tail = ""  
-        
-    air_line = TEXTS[lang]["air_status"][air_key]
-    decision_line = TEXTS[lang]["decision_text"][status_key]
+        time_tail = ""
 
     text = (
         f"<b>🏔 Ararat Now</b>\n\n"
@@ -133,11 +140,35 @@ def build_weather_text(lang: str, data: dict, status_key: str) -> str:
         f"👀 {TEXTS[lang]['visibility_label']}: {visibility_km} km\n\n"
         f"🌫 {TEXTS[lang]['air_label']}: <b>{air_line}</b>\n"
         f"AQI {data['aqi']} • PM2.5 {round(data['pm25'])} • PM10 {round(data['pm10'])}\n\n"
-        f"🎯 {TEXTS[lang]['decision_label']}: <i>{decision_line}</i>\n\n"
-        f"{time_tail}"
+        f"🎯 {TEXTS[lang]['decision_label']}: <i>{decision_line}</i>"
+        f"{f'\\n\\n{time_tail}' if time_tail else ''}"
     )
 
     return text
+
+
+def build_morning_notification_text(lang: str, data: dict, status_key: str) -> str:
+    visibility_km = round(data["visibility"] / 1000, 1)
+    air_key = get_air_status(data)
+
+    status_line = random.choice(TEXTS[lang][status_key])
+    air_line = TEXTS[lang]["air_status"][air_key]
+    decision_line = TEXTS[lang]["decision_text"][status_key]
+
+    return (
+        f"🏔 Ararat Now\n\n"
+        f"{status_line}\n\n"
+        f"👀 {TEXTS[lang]['visibility_label']}: {visibility_km} km\n"
+        f"🌫 {TEXTS[lang]['air_label']}: {air_line}\n\n"
+        f"🎯 {decision_line}"
+    )
+
+
+def build_best_photo_caption(lang: str = "ru") -> str:
+    return TEXTS[lang].get(
+        "best_photo_day_caption",
+        "📸 Лучшее фото дня\n\nСегодня Арарат поймали так 👀"
+    )
 
 
 def should_send_notification(status_key: str, data: dict) -> bool:
@@ -155,32 +186,10 @@ def should_send_notification(status_key: str, data: dict) -> bool:
     return False
 
 
-def build_morning_notification_text(lang: str, data: dict, status_key: str) -> str:
-    visibility_km = round(data["visibility"] / 1000, 1)
-    air_key = get_air_status(data)
-
-    status_line = random.choice(TEXTS[lang][status_key])
-    air_line = TEXTS[lang]["air_status"][air_key]
-    decision_line = TEXTS[lang]["decision_text"][status_key]
-
-    text = (
-        f"🏔 Ararat Now\n\n"
-        f"{status_line}\n\n"
-        f"👀 {TEXTS[lang]['visibility_label']}: {visibility_km} km\n"
-        f"🌫 {TEXTS[lang]['air_label']}: {air_line}\n\n"
-        f"🎯 {decision_line}"
-    )
-
-    return text
-
-
-def build_best_photo_caption(lang: str = "ru") -> str:
-    captions = {
-        "ru": "📸 Лучшее фото дня\n\nСегодня Арарат поймали так 👀",
-        "en": "📸 Photo of the day\n\nThis is how Ararat looked today 👀",
-        "hy": "📸 Օրվա լավագույն լուսանկարը\n\nԱյսպես են այսօր բռնել Արարատը 👀",
-    }
-    return captions.get(lang, captions["ru"])
+def get_status_with_score(data: dict) -> str:
+    crowd_bonus = 0
+    score = calculate_ararat_score(data, crowd_bonus=crowd_bonus)
+    return get_ararat_status_from_score(score, data)
 
 
 @dp.message(Command("start"))
@@ -198,17 +207,16 @@ async def start_handler(message: Message):
         return
 
     subscription_text = (
-        TEXTS[lang]["subscription_on"]
+        TEXTS[lang]["subscribed_text"]
         if is_user_subscribed(chat_id)
-        else TEXTS[lang]["subscription_off"]
+        else TEXTS[lang]["unsubscribed_text"]
     )
 
     text = (
         f"<b>🏔 Ararat Now</b>\n\n"
-        f"{TEXTS[lang]['start_ready']}\n\n"
-        f"{TEXTS[lang]['current_language_label']}: <b>{get_language_name(lang)}</b>\n"
+        f"{TEXTS[lang]['language_set']}: <b>{get_language_name(lang)}</b>\n"
         f"🔔 {subscription_text}\n\n"
-        f"{TEXTS[lang]['start_hint']}"
+        f"{TEXTS[lang]['check_prompt']}"
     )
 
     await message.answer(
@@ -216,29 +224,6 @@ async def start_handler(message: Message):
         reply_markup=action_keyboard(lang, chat_id),
     )
 
-@dp.message(Command("stats"))
-async def stats_handler(message: Message):
-    # только админ
-    if str(message.chat.id) != str(ADMIN_CHAT_ID):
-        return
-
-    try:
-        total_users = get_total_users()
-        subscribed = get_total_subscribed()
-        photos = get_photos_count()
-
-        text = (
-            f"📊 <b>Ararat Now — статистика</b>\n\n"
-            f"👥 Всего пользователей: <b>{total_users}</b>\n"
-            f"🔔 Подписаны: <b>{subscribed}</b>\n"
-            f"📸 Фото в базе: <b>{photos}</b>\n"
-        )
-
-        await message.answer(text)
-
-    except Exception as e:
-        traceback.print_exc()
-        await message.answer(f"Ошибка: {repr(e)}")
 
 @dp.callback_query()
 async def callback_handler(callback: CallbackQuery):
@@ -298,6 +283,29 @@ async def callback_handler(callback: CallbackQuery):
         lang = get_user_language(chat_id) or "ru"
         await callback.message.answer(TEXTS[lang]["photo_prompt"])
 
+    elif data == "oracle":
+        lang = get_user_language(chat_id) or "ru"
+
+        try:
+            data_weather = get_weather_data(lang)
+            status_key = get_status_with_score(data_weather)
+            phrase = random.choice(TEXTS[lang]["oracle"][status_key])
+
+            if lang == "ru":
+                title = "🔮 <b>Арарат сегодня говорит:</b>"
+            elif lang == "en":
+                title = "🔮 <b>Ararat says today:</b>"
+            else:
+                title = "🔮 <b>Արարատն այսօր ասում է․</b>"
+
+            await callback.message.answer(
+                f"{title}\n\n<i>{phrase}</i>"
+            )
+
+        except Exception as e:
+            traceback.print_exc()
+            await callback.message.answer(f"Ошибка: {repr(e)}")
+
     await callback.answer()
 
 
@@ -337,12 +345,61 @@ async def check_now_handler(message: Message):
 
     try:
         data = get_weather_data(lang)
-        status_key = get_ararat_status(data)
+        status_key = get_status_with_score(data)
         text = build_weather_text(lang, data, status_key)
         await message.answer(text)
 
     except Exception as e:
         print("=== FULL ERROR /check_now ===")
+        traceback.print_exc()
+        await message.answer(f"Ошибка: {repr(e)}")
+
+
+@dp.message(Command("oracle"))
+async def oracle_handler(message: Message):
+    chat_id = message.chat.id
+    ensure_user(chat_id)
+    lang = get_user_language(chat_id) or "ru"
+
+    try:
+        data = get_weather_data(lang)
+        status_key = get_status_with_score(data)
+        phrase = random.choice(TEXTS[lang]["oracle"][status_key])
+
+        if lang == "ru":
+            title = "🔮 <b>Арарат сегодня говорит:</b>"
+        elif lang == "en":
+            title = "🔮 <b>Ararat says today:</b>"
+        else:
+            title = "🔮 <b>Արարատն այսօր ասում է․</b>"
+
+        await message.answer(f"{title}\n\n<i>{phrase}</i>")
+
+    except Exception as e:
+        traceback.print_exc()
+        await message.answer(f"Ошибка: {repr(e)}")
+
+
+@dp.message(Command("stats"))
+async def stats_handler(message: Message):
+    if str(message.chat.id) != str(ADMIN_CHAT_ID):
+        return
+
+    try:
+        total_users = get_total_users()
+        subscribed = get_total_subscribed()
+        photos = get_photos_count()
+
+        text = (
+            f"📊 <b>Ararat Now — статистика</b>\n\n"
+            f"👥 Всего пользователей: <b>{total_users}</b>\n"
+            f"🔔 Подписаны: <b>{subscribed}</b>\n"
+            f"📸 Фото в базе: <b>{photos}</b>"
+        )
+
+        await message.answer(text)
+
+    except Exception as e:
         traceback.print_exc()
         await message.answer(f"Ошибка: {repr(e)}")
 
@@ -443,7 +500,7 @@ async def send_morning_notifications():
         try:
             lang = get_user_language(chat_id) or "ru"
             data = get_weather_data(lang)
-            status_key = get_ararat_status(data)
+            status_key = get_status_with_score(data)
 
             if not should_send_notification(status_key, data):
                 continue
