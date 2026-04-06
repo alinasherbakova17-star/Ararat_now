@@ -1,4 +1,5 @@
 import sqlite3
+import datetime
 from pathlib import Path
 
 DATA_DIR = Path("/opt/render/project/src/data")
@@ -21,7 +22,8 @@ def init_db():
         CREATE TABLE IF NOT EXISTS users (
             chat_id INTEGER PRIMARY KEY,
             language TEXT,
-            subscribed INTEGER DEFAULT 0
+            subscribed INTEGER DEFAULT 0,
+            created_at TEXT DEFAULT CURRENT_TIMESTAMP
         )
     """)
 
@@ -30,8 +32,16 @@ def init_db():
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             user_chat_id INTEGER NOT NULL,
             file_id TEXT NOT NULL,
-            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-            is_best_of_day INTEGER DEFAULT 0
+            created_at TEXT DEFAULT CURRENT_TIMESTAMP
+        )
+    """)
+
+    cur.execute("""
+        CREATE TABLE IF NOT EXISTS best_photos (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            photo_id INTEGER NOT NULL,
+            date TEXT NOT NULL,
+            created_at TEXT DEFAULT CURRENT_TIMESTAMP
         )
     """)
 
@@ -153,7 +163,6 @@ def is_user_subscribed(chat_id: int) -> bool:
 
     if row is None:
         return False
-
     return bool(row["subscribed"])
 
 
@@ -165,7 +174,6 @@ def get_all_subscribed_users():
     rows = cur.fetchall()
 
     conn.close()
-
     return [row["chat_id"] for row in rows]
 
 
@@ -195,7 +203,7 @@ def get_photo_by_id(photo_id: int):
 
     cur.execute(
         """
-        SELECT id, user_chat_id, file_id, created_at, is_best_of_day
+        SELECT id, user_chat_id, file_id, created_at
         FROM photos
         WHERE id = ?
         """,
@@ -207,103 +215,65 @@ def get_photo_by_id(photo_id: int):
     return row
 
 
-def clear_best_photo_of_day():
+def add_best_photo(photo_id: int):
     conn = get_connection()
     cur = conn.cursor()
 
+    today = datetime.date.today().isoformat()
+
     cur.execute(
         """
-        UPDATE photos
-        SET is_best_of_day = 0
-        WHERE is_best_of_day = 1
-        """
-    )
-
-    conn.commit()
-    conn.close()
-
-
-def set_best_photo_of_day(photo_id: int):
-    conn = get_connection()
-    cur = conn.cursor()
-
-    cur.execute("UPDATE photos SET is_best_of_day = 0 WHERE is_best_of_day = 1")
-    cur.execute(
-        """
-        UPDATE photos
-        SET is_best_of_day = 1
-        WHERE id = ?
+        INSERT INTO best_photos (photo_id, date)
+        VALUES (?, ?)
         """,
-        (photo_id,)
+        (photo_id, today)
     )
 
     conn.commit()
     conn.close()
 
 
-def get_best_photo_of_day():
+def clear_best_photos_today():
     conn = get_connection()
     cur = conn.cursor()
+
+    today = datetime.date.today().isoformat()
 
     cur.execute(
         """
-        SELECT id, user_chat_id, file_id, created_at, is_best_of_day
-        FROM photos
-        WHERE is_best_of_day = 1
-        ORDER BY id DESC
-        LIMIT 1
-        """
+        DELETE FROM best_photos
+        WHERE date = ?
+        """,
+        (today,)
     )
-    row = cur.fetchone()
 
+    conn.commit()
     conn.close()
-    return row
-    def get_total_users():
-       conn = get_connection()
-       cur = conn.cursor()
-
-       cur.execute("SELECT COUNT(*) as count FROM users")
-       result = cur.fetchone()["count"]
-
-       conn.close()
-       return result
 
 
-def get_total_subscribed():
+def get_best_photos_today():
     conn = get_connection()
     cur = conn.cursor()
 
-    cur.execute("SELECT COUNT(*) as count FROM users WHERE subscribed = 1")
-    result = cur.fetchone()["count"]
+    today = datetime.date.today().isoformat()
 
+    cur.execute(
+        """
+        SELECT bp.photo_id, p.file_id, p.user_chat_id, p.created_at
+        FROM best_photos bp
+        JOIN photos p ON bp.photo_id = p.id
+        WHERE bp.date = ?
+        ORDER BY bp.id ASC
+        """,
+        (today,)
+    )
+
+    rows = cur.fetchall()
     conn.close()
-    return result
+
+    return rows
 
 
-def get_photos_count():
-    conn = get_connection()
-    cur = conn.cursor()
-
-    cur.execute("SELECT COUNT(*) as count FROM photos")
-    result = cur.fetchone()["count"]
-
-    conn.close()
-    return result
-
-
-def get_today_users():
-    conn = get_connection()
-    cur = conn.cursor()
-
-    cur.execute("""
-        SELECT COUNT(*) as count
-        FROM users
-        WHERE DATE(rowid, 'unixepoch') = DATE('now')
-    """)
-
-    result = cur.fetchone()["count"]
-    conn.close()
-    return result
 def get_total_users():
     conn = get_connection()
     cur = conn.cursor()
@@ -335,3 +305,22 @@ def get_photos_count():
 
     conn.close()
     return result
+
+
+def get_recent_photos_count(hours: int = 3):
+    conn = get_connection()
+    cur = conn.cursor()
+
+    cur.execute(
+        """
+        SELECT COUNT(*) as count
+        FROM photos
+        WHERE datetime(created_at) >= datetime('now', ?)
+        """,
+        (f"-{hours} hours",)
+    )
+
+    row = cur.fetchone()
+    conn.close()
+
+    return row["count"]

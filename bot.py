@@ -37,11 +37,13 @@ from db import (
     get_all_subscribed_users,
     add_photo,
     get_photo_by_id,
-    set_best_photo_of_day,
-    get_best_photo_of_day,
+    add_best_photo,
+    clear_best_photos_today,
+    get_best_photos_today,
     get_total_users,
     get_total_subscribed,
     get_photos_count,
+    get_recent_photos_count,
 )
 
 load_dotenv()
@@ -88,20 +90,16 @@ def safe_oracle_phrase(lang: str, status_key: str) -> str:
 
 
 def safe_air_line(lang: str, air_key: str) -> str:
-    return (
-        TEXTS.get(lang, {}).get("air_status", {}).get(
-            air_key,
-            TEXTS.get("ru", {}).get("air_status", {}).get(air_key, air_key),
-        )
+    return TEXTS.get(lang, {}).get("air_status", {}).get(
+        air_key,
+        TEXTS.get("ru", {}).get("air_status", {}).get(air_key, air_key),
     )
 
 
 def safe_decision_line(lang: str, status_key: str) -> str:
-    return (
-        TEXTS.get(lang, {}).get("decision_text", {}).get(
-            status_key,
-            TEXTS.get("ru", {}).get("decision_text", {}).get(status_key, status_key),
-        )
+    return TEXTS.get(lang, {}).get("decision_text", {}).get(
+        status_key,
+        TEXTS.get("ru", {}).get("decision_text", {}).get(status_key, status_key),
     )
 
 
@@ -174,7 +172,18 @@ def get_language_name(lang: str) -> str:
 
 
 def get_status_with_score(data: dict) -> str:
-    score = calculate_ararat_score(data, crowd_bonus=0)
+    recent_photos = 0
+    crowd_bonus = 0
+
+    try:
+        recent_photos = get_recent_photos_count(3)
+        if recent_photos > 0:
+            crowd_bonus = 10
+    except Exception:
+        recent_photos = 0
+        crowd_bonus = 0
+
+    score = calculate_ararat_score(data, crowd_bonus=crowd_bonus)
     return get_ararat_status_from_score(score, data)
 
 
@@ -191,7 +200,7 @@ def build_weather_text(lang: str, data: dict, status_key: str) -> str:
     time_tail = safe_time_tail(lang, time_mode) if status_key in ("good", "excellent") else ""
     tail_block = f"\n\n{time_tail}" if time_tail else ""
 
-    text = (
+    return (
         f"<b>🏔 Ararat Now</b>\n\n"
         f"<i>{status_line}</i>\n\n"
         f"🌤 {t(lang, 'sky_label', 'Небо')}: <b>{sky_text}</b>\n\n"
@@ -204,7 +213,6 @@ def build_weather_text(lang: str, data: dict, status_key: str) -> str:
         f"🎯 {t(lang, 'decision_label', 'Вердикт')}: <i>{decision_line}</i>"
         f"{tail_block}"
     )
-    return text
 
 
 def build_morning_notification_text(lang: str, data: dict, status_key: str) -> str:
@@ -228,7 +236,7 @@ def build_best_photo_caption(lang: str = "ru") -> str:
     return t(
         lang,
         "best_photo_day_caption",
-        "📸 Лучшее фото дня\n\nСегодня Арарат поймали так 👀"
+        "📸 Лучшие фото дня\n\nСегодня Арарат поймали так 👀"
     )
 
 
@@ -478,8 +486,17 @@ async def best_today_handler(message: Message):
         await message.answer("Фото с таким id не найдено")
         return
 
-    set_best_photo_of_day(photo_id)
-    await message.answer(f"Фото {photo_id} выбрано как фото дня 📸")
+    add_best_photo(photo_id)
+    await message.answer(f"Фото {photo_id} добавлено в лучшие фото дня 📸")
+
+
+@dp.message(Command("clear_best_today"))
+async def clear_best_today_handler(message: Message):
+    if str(message.chat.id) != str(ADMIN_CHAT_ID):
+        return
+
+    clear_best_photos_today()
+    await message.answer("Лучшие фото дня очищены")
 
 
 @dp.message(Command("send_best_now"))
@@ -487,28 +504,32 @@ async def send_best_now_handler(message: Message):
     if str(message.chat.id) != str(ADMIN_CHAT_ID):
         return
 
-    best_photo = get_best_photo_of_day()
+    best_photos = get_best_photos_today()
 
-    if not best_photo:
-        await message.answer("Фото дня пока не выбрано")
+    if not best_photos:
+        await message.answer("На сегодня фото дня пока не выбраны")
         return
 
     users = get_all_subscribed_users()
-
     sent = 0
+
     for user_id in users:
         try:
             lang = get_user_language(user_id) or "ru"
-            await bot.send_photo(
-                chat_id=user_id,
-                photo=best_photo["file_id"],
-                caption=build_best_photo_caption(lang),
-            )
+
+            for index, photo in enumerate(best_photos):
+                caption = build_best_photo_caption(lang) if index == 0 else None
+                await bot.send_photo(
+                    chat_id=user_id,
+                    photo=photo["file_id"],
+                    caption=caption,
+                )
+
             sent += 1
         except Exception:
             traceback.print_exc()
 
-    await message.answer(f"Фото дня отправлено: {sent} пользователям")
+    await message.answer(f"Подборка дня отправлена: {sent} пользователям")
 
 
 @dp.message()
@@ -569,10 +590,10 @@ async def send_morning_notifications():
 
 
 async def send_evening_best_photo():
-    best_photo = get_best_photo_of_day()
+    best_photos = get_best_photos_today()
 
-    if not best_photo:
-        print("No best photo selected for evening push")
+    if not best_photos:
+        print("No best photos selected for evening push")
         return
 
     users = get_all_subscribed_users()
@@ -580,13 +601,17 @@ async def send_evening_best_photo():
     for user_id in users:
         try:
             lang = get_user_language(user_id) or "ru"
-            await bot.send_photo(
-                chat_id=user_id,
-                photo=best_photo["file_id"],
-                caption=build_best_photo_caption(lang),
-            )
+
+            for index, photo in enumerate(best_photos):
+                caption = build_best_photo_caption(lang) if index == 0 else None
+                await bot.send_photo(
+                    chat_id=user_id,
+                    photo=photo["file_id"],
+                    caption=caption,
+                )
+
         except Exception:
-            print(f"=== ERROR evening best photo user_id={user_id} ===")
+            print(f"=== ERROR evening best photos user_id={user_id} ===")
             traceback.print_exc()
 
 
