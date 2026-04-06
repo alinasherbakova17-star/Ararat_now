@@ -1,26 +1,16 @@
 TEXTS = {
     "ru": {
-        "welcome": "🌅 Всем пламенный барев от Ararat Now\n\nЯ проверяю небо вместо тебя.\nУзнай, видно ли сегодня Арарат.\n\nВыбери язык ↓",
-        "language_set": "Язык переключен на русский 🇷🇺",
-        "check_prompt": "Напиши /check_now, чтобы узнать, виден ли Арарат.",
-        "no_language": "Сначала выбери язык через /start",
+        "welcome": "🏔 Ararat Now\n\nВыбери язык:",
+        "language_set": "Язык установлен",
+        "check_prompt": "Теперь можешь проверить видимость или включить уведомления",
 
-        "subscribe_button": "🔔 Подписаться",
-        "unsubscribe_button": "🔕 Отписаться",
-        "photo_button": "📸 Отправить фото",
+        "subscribe_button": "🔔 Включить уведомления",
+        "unsubscribe_button": "🔕 Отключить уведомления",
 
-        "subscribed_text": "Теперь я буду писать тебе утром 🌅",
-        "unsubscribed_text": "Ок, больше не буду беспокоить",
+        "subscribed_text": "Уведомления включены",
+        "unsubscribed_text": "Уведомления отключены",
 
-        "photo_prompt": "Отправь мне фото Арарата, и я зафиксирую момент 📸",
-        "photo_received": "📸 Фото принято. Момент зафиксирован.",
-        "photo_caption_prefix": "Новое фото Арарата",
-
-        "current_language_label": "Текущий язык",
-        "subscription_on": "утренние уведомления включены",
-        "subscription_off": "утренние уведомления выключены",
-        "start_ready": "Я уже всё помню. Идём проверять Арарат?",
-        "start_hint": "Можешь написать /check_now, поменять подписку или отправить фото ниже.",
+        "no_language": "Сначала выбери язык",
 
         "sky_label": "Небо",
         "temp_label": "Температура",
@@ -30,45 +20,55 @@ TEXTS = {
         "air_label": "Воздух",
         "decision_label": "Вердикт",
 
+        # 🌤 статусы
         "excellent": [
-            "Арарат сегодня как на открытке и просится в кадр",
-            "Сегодня Араратный день",
-            "Редкий день, когда всё идеально",
-            "Сегодня Арарат не только на упаковке шоколада",
+            "Сегодня всё максимально открыто",
+            "Редкий день, когда Арарат не скрывается",
+            "Вот это тот самый вид",
         ],
         "good": [
-            "Ты везунчик, Арарат хорошо виден",
-            "Почти чисто, можно ловить момент",
-            "Самое время найти локацию с видом на Арарат",
+            "Вид есть, можно ловить момент",
+            "Арарат сегодня в кадре",
+            "Хороший день, чтобы смотреть вдаль",
         ],
         "cloudy": [
-            "Облака сегодня лезут в кадр ☁️",
-            "Арарат видно, но небо вмешивается",
-            "Облака перетягивают внимание",
+            "Сверху давит, но вдали есть просвет",
+            "Облака плотные, но Арарат проскальзывает",
+            "Небо мешает, но не побеждает",
+        ],
+        "covered": [
+            "Сегодня Арарат полностью спрятан",
+            "Гора за плотной стеной облаков",
+            "Сегодня его не пробить",
         ],
         "medium": [
-            "Арарат угадывается, но не очень чётко",
-            "Нужно присмотреться",
-            "Сегодня не самый очевидный день",
+            "Ситуация на грани",
+            "Может появиться, может исчезнуть",
+            "Сегодня всё нестабильно",
         ],
         "bad": [
-            "Сегодня он спрятался",
-            "Погода не Араратная",
-            "Даже не напрягайся",
+            "Сегодня город без Арарата",
+            "Гора полностью исчезла",
+            "Можно не ждать вида",
         ],
         "smog": [
-            "Сегодня не воздух, а завеса",
-            "Смог съел весь вид",
-            "Воздух против нас",
-            "Арарат не смог, смог в воздухе",
-            "Берегись, сегодня можно отравиться видом",
-        ],
-        "covered": [ 
-            "Тучи просятся в кадр больше, чем гора ☁️",
-            "Облака полностью спрятали гору",
-            "Сегодня развиваем воображение и представляем, что там Арарат, а не сплошная туча",
+            "Воздух портит всё",
+            "Смог забирает горизонт",
+            "Сегодня проблема не в облаках",
         ],
 
+        # 🎯 решение
+        "decision_text": {
+            "excellent": "Вид идеальный, это Араратный день",
+            "good": "Сегодня можно наслаждаться видом",
+            "cloudy": "Сегодня облака хотят быть в центре внимания",
+            "covered": "Гора закрыта облаками, сегодня лучше не ждать чёткого вида",
+            "medium": "Всё нестабильно",
+            "bad": "Арарат спрятался",
+            "smog": "Арарат ушел искать чистый воздух",
+        },
+
+        # 🌫 воздух
         "air_status": {
             "air_clean": "воздух чистый",
             "air_ok": "воздух нормальный",
@@ -76,48 +76,78 @@ TEXTS = {
             "air_bad": "воздух плохой",
         },
 
-        "decision_text": {
-            "excellent": "обязательно смотри",
-            "good": "можно спокойно смотреть",
-            "cloudy": "видимость нормальная, но облака мешают",
-            "medium": "если приглядеться — увидишь",
-            "bad": "сегодня Арарат только в коньяке",
-            "smog": "воздух сильно портит картину",
-            "covered": "гора закрыта облаками, сегодня лучше не ждать вида",
-        },
-
+        # ☀️ tail (ТОЛЬКО good/excellent)
         "time_tail": {
-            "morning": ["Весь день впереди, чтобы поймать Арарат"],
-            "day": ["Ты еще не сделал фото? Нам нужно больше Арарата в ленте!"],
-            "evening": ["Арарат на закате - это отдельный вид искусства"],
-            "night": ["Если Арарат не показался тебе сегодня, не отчаивайся, завтра будет новый день!"],
+            "morning": [
+                "Утро максимально честное",
+                "Хороший день начинается с Арарата",
+            ],
+            "day": [
+                "День на твоей стороне",
+                "Хороший день, чтобы прислать в бот фото Арарата",
+            ],
+            "evening": [
+                "Арарат на закате - отдельный вид искусства",
+                "Вечер обещает быть красивым",
+            ],
+            "night": [
+                "Ночью больше про атмосферу, чем про детали",
+            ],
         },
 
-        "best_photo_day_caption": "📸 Лучшее фото дня\n\nСегодня Арарат поймали так 👀",
+        # 🔮 ORACLE
+        "oracle": {
+            "excellent": [
+                "Арарат видно — значит, этот день уже удался.",
+                "Проверь, что происходит в HelloBarevПривет, и выходи из дома скорее.",
+                "День без тумана.\nСмотри прямо и действуй прямо.",
+            ],
+            "good": [
+                "Выбирайся на бранч от Uptown Yerevan и заводи полезные знакомства.",
+                "Сегодня даже ереванские пробки не смогут тебя остановить.",
+                "Если услышишь на Северном любимую песню — загадай желание.",
+            ],
+            "cloudy": [
+                "Что-то важное уже рядом,\nно ты пока видишь только часть картины.",
+                "Если тебе говорят «уже выхожу» — вспоминай армянские тайминги.",
+                "Не бойся лишней чашки кофе.\nЭнергия пригодится.",
+            ],
+            "covered": [
+                "Сейчас не день для полной ясности.",
+                "Это не «нет».\nЭто «ещё не время».",
+                "Оставь немного загадки.",
+            ],
+            "medium": [
+                "День между.\nЛучше наблюдать.",
+                "Не всё должно быть чётко сегодня.",
+                "Пусть ответ останется намёком.",
+            ],
+            "bad": [
+                "Арарат не видно.\nНо это не значит, что не получится.",
+                "Пауза сильнее действия.",
+                "Не ищи ясность там, где её нет.",
+            ],
+            "smog": [
+                "Слишком много шума вокруг.",
+                "Не доверяй первому впечатлению.",
+                "Очисти голову, даже если воздух грязный.",
+            ],
+        },
     },
 
+    # 🇬🇧 ENGLISH
     "en": {
-        "welcome": "🌅 Warm greetings from Ararat Now\n\nI check the sky for you.\nSee if Ararat is visible today.\n\nChoose language ↓",
-        "language_set": "Language set to English 🇬🇧",
-        "check_prompt": "Send /check_now to see if Ararat is visible.",
-        "no_language": "Please choose language via /start first",
+        "welcome": "🏔 Ararat Now\n\nChoose language:",
+        "language_set": "Language set",
+        "check_prompt": "Now you can check visibility or enable notifications",
 
-        "subscribe_button": "🔔 Subscribe",
-        "unsubscribe_button": "🔕 Unsubscribe",
-        "photo_button": "📸 Send photo",
+        "subscribe_button": "🔔 Enable notifications",
+        "unsubscribe_button": "🔕 Disable notifications",
 
-        "subscribed_text": "I’ll text you every morning 🌅",
-        "unsubscribed_text": "Okay, I won’t bother you anymore",
+        "subscribed_text": "Notifications enabled",
+        "unsubscribed_text": "Notifications disabled",
 
-        "photo_prompt": "Send me an Ararat photo and I’ll capture the moment 📸",
-        "photo_received": "📸 Photo received. Moment captured.",
-        "photo_caption_prefix": "New Ararat photo",
-
-        "current_language_label": "Current language",
-        "subscription_on": "morning notifications are on",
-        "subscription_off": "morning notifications are off",
-        "start_ready": "I remember everything.",
-        "start_hint": "You can send /check_now, change subscription or send a photo below.",
+        "no_language": "Select language first",
 
         "sky_label": "Sky",
         "temp_label": "Temperature",
@@ -127,160 +157,111 @@ TEXTS = {
         "air_label": "Air",
         "decision_label": "Decision",
 
-        "excellent": [
-            "Ararat looks like a postcard today",
-            "It’s out and not hiding",
-            "One of those rare ideal days",
-        ],
-        "good": [
-            "Ararat is clearly visible",
-            "Pretty clear, worth catching",
-            "A solid chance today",
-        ],
-        "cloudy": [
-            "Clouds are in the frame ☁️",
-            "You can see it, but the sky interferes",
-            "Clouds are stealing attention",
-        ],
-        "medium": [
-            "Ararat is there, but not very clearly",
-            "You’ll need to look carefully",
-            "Not the easiest day to spot it",
-        ],
-        "bad": [
-            "It’s hiding today",
-            "No real chance to see it",
-            "Don’t even try too hard",
-        ],
-        "smog": [
-            "The air is basically a filter today",
-            "Smog ate the whole view",
-            "Air is against us",
-        ],
-        "covered": [
-            "Ararat is covered by clouds today ☁️",
-            "The mountain is fully hidden by clouds",
-            "This is not drama, this is a full cloud curtain",
-        ],
-
-        "air_status": {
-            "air_clean": "air is clean",
-            "air_ok": "air is normal",
-            "air_heavy": "air feels heavy",
-            "air_bad": "air is bad",
-        },
+        "excellent": ["Everything is open today"],
+        "good": ["You can catch the view"],
+        "cloudy": ["Clouds interfere"],
+        "covered": ["Fully covered"],
+        "medium": ["Unstable conditions"],
+        "bad": ["No Ararat today"],
+        "smog": ["Air ruins visibility"],
 
         "decision_text": {
-            "excellent": "definitely go look",
-            "good": "worth checking",
-            "cloudy": "visibility is okay, but clouds interfere",
-            "medium": "you may catch it if you look carefully",
-            "bad": "better not count on it today",
-            "smog": "air conditions ruin the view",
-            "covered": "the mountain is covered by clouds, not a day to expect the view",
+            "excellent": "perfect view",
+            "good": "visible",
+            "cloudy": "clouds interfere",
+            "covered": "fully hidden",
+            "medium": "unstable",
+            "bad": "not visible",
+            "smog": "air blocks view",
+        },
+
+        "air_status": {
+            "air_clean": "clean air",
+            "air_ok": "normal air",
+            "air_heavy": "heavy air",
+            "air_bad": "bad air",
         },
 
         "time_tail": {
-            "morning": ["Morning shows the truth"],
-            "day": ["Daylight doesn’t lie"],
-            "evening": ["Sunset adds drama"],
-            "night": ["At night it’s more about mood than detail"],
+            "morning": ["A clear start"],
+            "day": ["Good day ahead"],
+            "evening": ["Nice evening coming"],
+            "night": ["Still worth looking up"],
         },
 
-        "best_photo_day_caption": "📸 Photo of the day\n\nThis is how Ararat looked today 👀",
+        "oracle": {
+            "excellent": ["The day is already a success."],
+            "good": ["You are on the right track."],
+            "cloudy": ["You see only part of it."],
+            "covered": ["Not the time yet."],
+            "medium": ["Observe, don’t rush."],
+            "bad": ["Pause today."],
+            "smog": ["Too much noise around."],
+        },
     },
 
+    # 🇦🇲 ARMENIAN
     "hy": {
-        "welcome": "🌅 Բարև Ararat Now-ից\n\nԵս ստուգում եմ երկինքը քեզ համար։\nՏես՝ երևում է Արարատը այսօր թե ոչ։\n\nԸնտրիր լեզուն ↓",
-        "language_set": "Լեզուն փոխվեց հայերեն 🇦🇲",
-        "check_prompt": "Գրիր /check_now՝ տեսնելու համար՝ երևում է Արարատը։",
-        "no_language": "Սկզբում ընտրիր լեզուն /start-ով",
+        "welcome": "🏔 Ararat Now\n\nԸնտրիր լեզուն:",
+        "language_set": "Լեզուն ընտրված է",
+        "check_prompt": "Հիմա կարող ես ստուգել տեսանելիությունը",
 
-        "subscribe_button": "🔔 Բաժանորդագրվել",
-        "unsubscribe_button": "🔕 Ապաբաժանորդագրվել",
-        "photo_button": "📸 Ուղարկել լուսանկար",
+        "subscribe_button": "🔔 Միացնել",
+        "unsubscribe_button": "🔕 Անջատել",
 
-        "subscribed_text": "Ես քեզ առավոտյան կգրեմ 🌅",
-        "unsubscribed_text": "Լավ, այլևս չեմ անհանգստացնի",
+        "subscribed_text": "Միացված է",
+        "unsubscribed_text": "Անջատված է",
 
-        "photo_prompt": "Ուղարկիր ինձ Արարատի լուսանկար, և ես կֆիքսեմ պահը 📸",
-        "photo_received": "📸 Լուսանկարը ընդունված է։ Պահը ֆիքսված է։",
-        "photo_caption_prefix": "Արարատի նոր լուսանկար",
-
-        "current_language_label": "Ընթացիկ լեզու",
-        "subscription_on": "առավոտյան ծանուցումները միացված են",
-        "subscription_off": "առավոտյան ծանուցումները անջատված են",
-        "start_ready": "Ես ամեն ինչ հիշում եմ։",
-        "start_hint": "Կարող ես գրել /check_now, փոխել բաժանորդագրությունը կամ ուղարկել լուսանկար։",
+        "no_language": "Ընտրիր լեզուն",
 
         "sky_label": "Երկինք",
         "temp_label": "Ջերմաստիճան",
         "wind_label": "Քամի",
-        "clouds_label": "Ամպամածություն",
+        "clouds_label": "Ամպեր",
         "visibility_label": "Տեսանելիություն",
         "air_label": "Օդ",
-        "decision_label": "Վճիռ",
+        "decision_label": "Եզրակացություն",
 
-        "excellent": [
-            "Այսօր Արարատը բաց է ու պարզ",
-            "Նա դուրս է եկել ու չի թաքնվում",
-            "Հազվադեպ իդեալական օր է",
-        ],
-        "good": [
-            "Արարատը լավ է երևում",
-            "Լավ օր է պահը բռնելու համար",
-            "Այսօր շանսը լավն է",
-        ],
-        "cloudy": [
-            "Ամպերը կադրում են ☁️",
-            "Արարատը երևում է, բայց երկինքը խանգարում է",
-            "Ամպերը ուշադրություն են գողանում",
-        ],
-        "medium": [
-            "Արարատը կա, բայց ոչ այնքան հստակ",
-            "Պետք է ուշադիր նայել",
-            "Տեսնելու համար հեշտ օր չէ",
-        ],
-        "bad": [
-            "Այսօր նա թաքնվել է",
-            "Գրեթե շանս չկա",
-            "Շատ մի փորձիր",
-        ],
-        "smog": [
-            "Այսօր օդն ինքն է ֆիլտր",
-            "Մշուշը կերել է տեսարանը",
-            "Օդը մեր դեմ է",
-        ],
-        "covered": [
-            "Այսօր Արարատը փակված է ամպերով ☁️",
-            "Ամպերը ամբողջությամբ թաքցրել են լեռը",
-            "Այսօր դա պարզապես ամպային վարագույր է",
-        ],
-
-        "air_status": {
-            "air_clean": "օդը մաքուր է",
-            "air_ok": "օդը նորմալ է",
-            "air_heavy": "օդը ծանր է",
-            "air_bad": "օդը վատ է",
-        },
+        "excellent": ["Ամեն ինչ բաց է"],
+        "good": ["Տեսանելի է"],
+        "cloudy": ["Ամպերը խանգարում են"],
+        "covered": ["Փակ է"],
+        "medium": ["Անորոշ է"],
+        "bad": ["Չի երևում"],
+        "smog": ["Օդը խանգարում է"],
 
         "decision_text": {
-            "excellent": "պետք է անպայման նայել",
-            "good": "արժե նայել",
-            "cloudy": "տեսանելիությունը նորմալ է, բայց ամպերը խանգարում են",
-            "medium": "եթե ուշադիր նայես՝ կտեսնես",
-            "bad": "այսօր լավ է չհույս դնել",
-            "smog": "օդը փչացնում է տեսարանը",
-            "covered": "լեռը փակված է ամպերով, այսօր լավ չէ տեսարան սպասել",
+            "excellent": "իդեալական տեսք",
+            "good": "տեսանելի է",
+            "cloudy": "ամպերը խանգարում են",
+            "covered": "փակ է",
+            "medium": "անորոշ",
+            "bad": "չի երևում",
+            "smog": "օդը վատ է",
+        },
+
+        "air_status": {
+            "air_clean": "մաքուր օդ",
+            "air_ok": "նորմալ օդ",
+            "air_heavy": "ծանր օդ",
+            "air_bad": "վատ օդ",
         },
 
         "time_tail": {
-            "morning": ["Առավոտը ամեն ինչ ցույց է տալիս"],
-            "day": ["Ցերեկային լույսը չի խաբում"],
-            "evening": ["Մայրամուտը դրամա է ավելացնում"],
-            "night": ["Գիշերը սա ավելի շատ տրամադրության մասին է"],
+            "morning": ["Լավ սկիզբ"],
+            "day": ["Լավ օր"],
+            "evening": ["Գեղեցիկ երեկո"],
+            "night": ["Նայիր վերև"],
         },
 
-        "best_photo_day_caption": "📸 Օրվա լավագույն լուսանկարը\n\nԱյսպես են այսօր բռնել Արարատը 👀",
+        "oracle": {
+            "excellent": ["Օրը հաջողված է"],
+            "good": ["Ճիշտ ուղու վրա ես"],
+            "cloudy": ["Մասամբ ես տեսնում"],
+            "covered": ["Դեռ ժամանակը չէ"],
+            "medium": ["Դիտիր"],
+            "bad": ["Դադար տուր"],
+            "smog": ["Շատ աղմուկ կա"],
+        },
     },
 }
