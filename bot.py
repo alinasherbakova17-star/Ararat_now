@@ -134,6 +134,17 @@ def language_keyboard():
 def action_keyboard(lang: str, chat_id: int):
     rows = []
 
+    rows.append([
+        InlineKeyboardButton(
+            text=t(lang, "check_now_button", "👀 Проверить сейчас"),
+            callback_data="check_now_inline"
+        ),
+        InlineKeyboardButton(
+            text=t(lang, "oracle_button", "🔮 Оракул"),
+            callback_data="oracle"
+        )
+    ])
+
     if is_user_subscribed(chat_id):
         rows.append([
             InlineKeyboardButton(
@@ -153,19 +164,6 @@ def action_keyboard(lang: str, chat_id: int):
         InlineKeyboardButton(
             text=t(lang, "photo_button", "📸 Отправить фото"),
             callback_data="send_photo"
-        )
-    ])
-
-    oracle_label = {
-        "ru": "🔮 Оракул",
-        "en": "🔮 Oracle",
-        "hy": "🔮 Օրաքուլ",
-    }.get(lang, "🔮 Оракул")
-
-    rows.append([
-        InlineKeyboardButton(
-            text=oracle_label,
-            callback_data="oracle"
         )
     ])
 
@@ -356,6 +354,18 @@ async def callback_handler(callback: CallbackQuery):
         await callback.message.answer(
             t(lang, "photo_prompt", "Отправь фото Арарата 📸")
         )
+
+    elif data == "check_now_inline":
+        lang = get_user_language(chat_id) or "ru"
+
+        try:
+            data_weather = get_weather_data(lang)
+            status_key = get_status_with_score(data_weather)
+            text = build_weather_text(lang, data_weather, status_key)
+            await callback.message.answer(text)
+        except Exception as e:
+            traceback.print_exc()
+            await callback.message.answer(f"Ошибка: {repr(e)}")
 
     elif data == "oracle":
         lang = get_user_language(chat_id) or "ru"

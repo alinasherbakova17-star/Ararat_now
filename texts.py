@@ -7,6 +7,8 @@ TEXTS = {
         "subscribe_button": "🔔 Включить уведомления",
         "unsubscribe_button": "🔕 Отключить уведомления",
         "photo_button": "📸 Отправить фото",
+        "check_now_button": "👀Проверить сейчас",
+        "oracle_button": "🔮 Араратный оракул",
 
         "subscribed_text": "Уведомления включены",
         "unsubscribed_text": "Уведомления отключены",
@@ -149,6 +151,8 @@ TEXTS = {
         "subscribe_button": "🔔 Enable notifications",
         "unsubscribe_button": "🔕 Disable notifications",
         "photo_button": "📸 Send photo",
+        "check_now_button": "👀 Check now",
+        "oracle_button": "🔮 Ararat Oracle",
 
         "subscribed_text": "Notifications enabled",
         "unsubscribed_text": "Notifications disabled",
@@ -286,6 +290,8 @@ TEXTS = {
         "subscribe_button": "🔔 Միացնել ծանուցումները",
         "unsubscribe_button": "🔕 Անջատել ծանուցումները",
         "photo_button": "📸 Ուղարկել լուսանկար",
+        "check_now_button": "👀 Ստուգել հիմա",
+        "oracle_button": "🔮 Արարատն օրաքուլ",
 
         "subscribed_text": "Ծանուցումները միացված են",
         "unsubscribed_text": "Ծանուցումները անջատված են",
