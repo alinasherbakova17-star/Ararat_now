@@ -12,6 +12,7 @@ from aiogram.types import (
     InlineKeyboardMarkup,
     InlineKeyboardButton,
     CallbackQuery,
+    BotCommand,
 )
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from apscheduler.triggers.cron import CronTrigger
@@ -110,6 +111,14 @@ def safe_time_tail(lang: str, time_mode: str) -> str:
     return pick_from_list(values, "")
 
 
+def get_language_name(lang: str) -> str:
+    return {
+        "ru": "Русский 🇷🇺",
+        "en": "English 🇬🇧",
+        "hy": "Հայերեն 🇦🇲",
+    }.get(lang, "Русский 🇷🇺")
+
+
 def language_keyboard():
     return InlineKeyboardMarkup(
         inline_keyboard=[
@@ -163,12 +172,14 @@ def action_keyboard(lang: str, chat_id: int):
     return InlineKeyboardMarkup(inline_keyboard=rows)
 
 
-def get_language_name(lang: str) -> str:
-    return {
-        "ru": "Русский 🇷🇺",
-        "en": "English 🇬🇧",
-        "hy": "Հայերեն 🇦🇲",
-    }.get(lang, "Русский 🇷🇺")
+async def set_main_menu():
+    commands = [
+        BotCommand(command="check_now", description="Проверить Арарат"),
+        BotCommand(command="oracle", description="Араратный оракул"),
+        BotCommand(command="subscribe", description="Включить уведомления"),
+        BotCommand(command="unsubscribe", description="Отключить уведомления"),
+    ]
+    await bot.set_my_commands(commands)
 
 
 def get_status_with_score(data: dict) -> str:
@@ -617,6 +628,7 @@ async def send_evening_best_photo():
 
 async def main():
     init_db()
+    await set_main_menu()
 
     scheduler.add_job(
         send_morning_notifications,
