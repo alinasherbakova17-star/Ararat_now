@@ -1,6 +1,11 @@
 TEXTS = {
     "ru": {
-        "welcome": "🏔 Ararat Now\n\nВыбери язык:",
+        "welcome": "🏔 <b>Ararat Now<b>\n\n"
+            "Бот, который говорит, видно ли сегодня Арarat\n\n"
+            "🔔 При подписке:\n"
+            " - утром ты получишь статус видимости\n"
+            " - вечером - подборку лучших фото дня📸\n\n"
+            "Выбери язык:",
         "language_set": "Язык установлен",
         "check_prompt": "Теперь можешь проверить видимость, включить уведомления или отправить фото. Нажми /check_now, чтобы проверить видимость",
 
@@ -144,7 +149,13 @@ TEXTS = {
     },
 
     "en": {
-        "welcome": "🏔 Ararat Now\n\nChoose language:",
+        "welcome":
+            "🏔 <b>Ararat Now</b>\n\n"
+            "A bot that tells you if Ararat is visible today\n\n"
+            "🔔 With subscription:\n"
+            "— morning visibility update\n"
+            "— best photo of the day in the evening 📸\n\n"
+            "Choose language:",
         "language_set": "Language set",
         "check_prompt": "Now you can check visibility, enable notifications, or send a photo",
 
@@ -283,7 +294,13 @@ TEXTS = {
     },
 
     "hy": {
-        "welcome": "🏔 Ararat Now\n\nԸնտրիր լեզուն:",
+        "welcome":
+            "🏔 <b>Ararat Now</b>\n\n"
+            "Բոտ, որը ցույց է տալիս՝ այսօր երևո՞ւմ է Արարատը\n\n"
+            "🔔 Բաժանորդագրվելու դեպքում՝\n"
+            "— առավոտյան կստանաս տեսանելիության ստատուսը\n"
+            "— երեկոյան՝ օրվա լավագույն լուսանկարը 📸\n\n"
+            "Ընտրիր լեզուն:",
         "language_set": "Լեզուն ընտրված է",
         "check_prompt": "Հիմա կարող ես ստուգել տեսանելիությունը, միացնել ծանուցումները կամ ուղարկել լուսանկար",
 
