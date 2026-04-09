@@ -269,6 +269,7 @@ async def start_handler(message: Message):
 
     lang = get_user_language(chat_id)
 
+    # 👇 ЕСЛИ ЯЗЫК НЕ ВЫБРАН
     if not lang:
         await message.answer(
             t("ru", "welcome", "🏔 Ararat Now\n\nВыбери язык:"),
@@ -276,6 +277,7 @@ async def start_handler(message: Message):
         )
         return
 
+    # 👇 ЕСЛИ ЯЗЫК УЖЕ ЕСТЬ
     subscription_text = (
         t(lang, "subscribed_text", "Уведомления включены")
         if is_user_subscribed(chat_id)
@@ -293,7 +295,6 @@ async def start_handler(message: Message):
         text,
         reply_markup=action_keyboard(lang, chat_id),
     )
-
 
 @dp.callback_query()
 async def callback_handler(callback: CallbackQuery):
