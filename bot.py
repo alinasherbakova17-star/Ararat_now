@@ -172,12 +172,29 @@ def action_keyboard(lang: str, chat_id: int):
 
 async def set_main_menu():
     commands = [
+        BotCommand(command="start", description="Запустить бота"),
         BotCommand(command="check_now", description="Проверить Арарат"),
         BotCommand(command="oracle", description="Араратный оракул"),
         BotCommand(command="subscribe", description="Включить уведомления"),
         BotCommand(command="unsubscribe", description="Отключить уведомления"),
     ]
     await bot.set_my_commands(commands)
+
+
+async def send_language_picker(message: Message):
+    await message.answer(
+        t(
+            "ru",
+            "welcome",
+            "🏔 <b>Ararat Now</b>\n\n"
+            "Бот, который говорит — видно ли сегодня Арарат\n\n"
+            "🔔 При подписке:\n"
+            "— утром ты получишь статус видимости\n"
+            "— вечером лучшее фото дня 📸\n\n"
+            "Выбери язык:"
+        ),
+        reply_markup=language_keyboard(),
+    )
 
 
 def get_status_with_score(data: dict) -> str:
@@ -269,15 +286,10 @@ async def start_handler(message: Message):
 
     lang = get_user_language(chat_id)
 
-    # 👇 ЕСЛИ ЯЗЫК НЕ ВЫБРАН
     if not lang:
-        await message.answer(
-            t("ru", "welcome", "🏔 Ararat Now\n\nВыбери язык:"),
-            reply_markup=language_keyboard(),
-        )
+        await send_language_picker(message)
         return
 
-    # 👇 ЕСЛИ ЯЗЫК УЖЕ ЕСТЬ
     subscription_text = (
         t(lang, "subscribed_text", "Уведомления включены")
         if is_user_subscribed(chat_id)
@@ -296,6 +308,7 @@ async def start_handler(message: Message):
         reply_markup=action_keyboard(lang, chat_id),
     )
 
+
 @dp.callback_query()
 async def callback_handler(callback: CallbackQuery):
     if callback.message is None:
@@ -310,7 +323,7 @@ async def callback_handler(callback: CallbackQuery):
         set_user_language(chat_id, "ru")
         lang = "ru"
         await callback.message.answer(
-            f"{t(lang, 'language_set', 'Язык установлен')}\n\n{t(lang, 'check_prompt', '')}",
+            f"{t(lang, 'language_set', 'Язык установлен')}\n\n{t(lang, 'check_prompt', 'Теперь можно проверить видимость')}",
             reply_markup=action_keyboard(lang, chat_id),
         )
 
@@ -319,7 +332,7 @@ async def callback_handler(callback: CallbackQuery):
         set_user_language(chat_id, "en")
         lang = "en"
         await callback.message.answer(
-            f"{t(lang, 'language_set', 'Language set')}\n\n{t(lang, 'check_prompt', '')}",
+            f"{t(lang, 'language_set', 'Language set')}\n\n{t(lang, 'check_prompt', 'Now you can check visibility')}",
             reply_markup=action_keyboard(lang, chat_id),
         )
 
@@ -328,7 +341,7 @@ async def callback_handler(callback: CallbackQuery):
         set_user_language(chat_id, "hy")
         lang = "hy"
         await callback.message.answer(
-            f"{t(lang, 'language_set', 'Լեզուն ընտրված է')}\n\n{t(lang, 'check_prompt', '')}",
+            f"{t(lang, 'language_set', 'Լեզուն ընտրված է')}\n\n{t(lang, 'check_prompt', 'Հիմա կարող ես ստուգել տեսանելիությունը')}",
             reply_markup=action_keyboard(lang, chat_id),
         )
 
@@ -357,7 +370,12 @@ async def callback_handler(callback: CallbackQuery):
         )
 
     elif data == "check_now_inline":
-        lang = get_user_language(chat_id) or "ru"
+        lang = get_user_language(chat_id)
+
+        if not lang:
+            await send_language_picker(callback.message)
+            await callback.answer()
+            return
 
         try:
             data_weather = get_weather_data(lang)
@@ -369,7 +387,12 @@ async def callback_handler(callback: CallbackQuery):
             await callback.message.answer(f"Ошибка: {repr(e)}")
 
     elif data == "oracle":
-        lang = get_user_language(chat_id) or "ru"
+        lang = get_user_language(chat_id)
+
+        if not lang:
+            await send_language_picker(callback.message)
+            await callback.answer()
+            return
 
         try:
             data_weather = get_weather_data(lang)
@@ -395,7 +418,12 @@ async def callback_handler(callback: CallbackQuery):
 async def subscribe_command(message: Message):
     chat_id = message.chat.id
     ensure_user(chat_id)
-    lang = get_user_language(chat_id) or "ru"
+    lang = get_user_language(chat_id)
+
+    if not lang:
+        await send_language_picker(message)
+        return
+
     subscribe_user(chat_id)
     await message.answer(
         t(lang, "subscribed_text", "Уведомления включены"),
@@ -407,7 +435,12 @@ async def subscribe_command(message: Message):
 async def unsubscribe_command(message: Message):
     chat_id = message.chat.id
     ensure_user(chat_id)
-    lang = get_user_language(chat_id) or "ru"
+    lang = get_user_language(chat_id)
+
+    if not lang:
+        await send_language_picker(message)
+        return
+
     unsubscribe_user(chat_id)
     await message.answer(
         t(lang, "unsubscribed_text", "Уведомления отключены"),
@@ -422,7 +455,7 @@ async def check_now_handler(message: Message):
     lang = get_user_language(chat_id)
 
     if not lang:
-        await message.answer(t("ru", "no_language", "Сначала выбери язык"))
+        await send_language_picker(message)
         return
 
     try:
@@ -441,7 +474,11 @@ async def check_now_handler(message: Message):
 async def oracle_handler(message: Message):
     chat_id = message.chat.id
     ensure_user(chat_id)
-    lang = get_user_language(chat_id) or "ru"
+    lang = get_user_language(chat_id)
+
+    if not lang:
+        await send_language_picker(message)
+        return
 
     try:
         data = get_weather_data(lang)
@@ -552,6 +589,41 @@ async def send_best_now_handler(message: Message):
             traceback.print_exc()
 
     await message.answer(f"Подборка дня отправлена: {sent} пользователям")
+
+
+@dp.message()
+async def text_language_handler(message: Message):
+    if message.photo:
+        return
+
+    raw = (message.text or "").strip().lower()
+
+    language_map = {
+        "русский": "ru",
+        "russian": "ru",
+        "🇷🇺 русский": "ru",
+        "english": "en",
+        "английский": "en",
+        "🇬🇧 english": "en",
+        "հայերեն": "hy",
+        "армянский": "hy",
+        "armenian": "hy",
+        "🇦🇲 հայերեն": "hy",
+    }
+
+    if raw not in language_map:
+        return
+
+    chat_id = message.chat.id
+    lang = language_map[raw]
+
+    ensure_user(chat_id)
+    set_user_language(chat_id, lang)
+
+    await message.answer(
+        f"{t(lang, 'language_set', 'Язык установлен')}\n\n{t(lang, 'check_prompt', 'Теперь можно проверить видимость')}",
+        reply_markup=action_keyboard(lang, chat_id),
+    )
 
 
 @dp.message()
