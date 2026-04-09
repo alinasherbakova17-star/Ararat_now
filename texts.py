@@ -7,8 +7,8 @@ TEXTS = {
             " - вечером - подборку лучших фото дня📸\n\n"
             "Выбери язык:",
         "language_set": "Язык установлен",
-        "check_prompt": "Теперь можешь проверить видимость, включить уведомления или отправить фото. Нажми /check_now, чтобы проверить видимость"
-            "Нажми 🔔, чтобы не пропускать Араратные дни\n\n",
+        "check_prompt": "Теперь можешь проверить видимость, включить уведомления или отправить фото. Нажми /check_now, чтобы проверить видимость\n\n"
+            "<b>Нажми 🔔, чтобы не пропускать Араратные дни</b>\n\n",
 
         "subscribe_button": "🔔 Включить уведомления",
         "unsubscribe_button": "🔕 Отключить уведомления",
@@ -158,8 +158,8 @@ TEXTS = {
             "— best photo of the day in the evening 📸\n\n"
             "Choose language:",
         "language_set": "Language set",
-        "check_prompt": "Now you can check visibility, enable notifications, or send a photo"
-            "Push 🔔 to keep Ararat in your sights\n\n", 
+        "check_prompt": "Now you can check visibility, enable notifications, or send a photo\n\n"
+            "<b>Push 🔔 to keep Ararat in your sights<b>\n\n", 
 
         "subscribe_button": "🔔 Enable notifications",
         "unsubscribe_button": "🔕 Disable notifications",
