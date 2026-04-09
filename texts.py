@@ -7,7 +7,8 @@ TEXTS = {
             " - вечером - подборку лучших фото дня📸\n\n"
             "Выбери язык:",
         "language_set": "Язык установлен",
-        "check_prompt": "Теперь можешь проверить видимость, включить уведомления или отправить фото. Нажми /check_now, чтобы проверить видимость",
+        "check_prompt": "Теперь можешь проверить видимость, включить уведомления или отправить фото. Нажми /check_now, чтобы проверить видимость"
+            "Нажми 🔔, чтобы не пропускать Араратные дни\n\n",
 
         "subscribe_button": "🔔 Включить уведомления",
         "unsubscribe_button": "🔕 Отключить уведомления",
@@ -157,7 +158,8 @@ TEXTS = {
             "— best photo of the day in the evening 📸\n\n"
             "Choose language:",
         "language_set": "Language set",
-        "check_prompt": "Now you can check visibility, enable notifications, or send a photo",
+        "check_prompt": "Now you can check visibility, enable notifications, or send a photo"
+            "Push 🔔 to keep Ararat in your sights\n\n", 
 
         "subscribe_button": "🔔 Enable notifications",
         "unsubscribe_button": "🔕 Disable notifications",
@@ -302,7 +304,11 @@ TEXTS = {
             "— երեկոյան՝ օրվա լավագույն լուսանկարը 📸\n\n"
             "Ընտրիր լեզուն:",
         "language_set": "Լեզուն ընտրված է",
-        "check_prompt": "Հիմա կարող ես ստուգել տեսանելիությունը, միացնել ծանուցումները կամ ուղարկել լուսանկար",
+        "check_prompt": "Հիմա կարող ես ստուգել տեսանելիությունը, միացնել ծանուցումները կամ ուղարկել լուսանկար"
+            "Բոտ, որը ցույց է տալիս՝ այսօր երևո՞ւմ է Արարատը\n\n"
+            "🔔 Բաժանորդագրվելու դեպքում՝\n"
+            "— առավոտյան կստանաս տեսանելիության ստատուսը\n"
+            "— երեկոյան՝ օրվա լավագույն լուսանկարը 📸\n\n",
 
         "subscribe_button": "🔔 Միացնել ծանուցումները",
         "unsubscribe_button": "🔕 Անջատել ծանուցումները",
