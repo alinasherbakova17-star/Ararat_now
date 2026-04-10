@@ -1,50 +1,52 @@
 import asyncio
+import logging
 import os
 import random
 import traceback
+from typing import Any
 
-from aiogram import Bot, Dispatcher
+from aiogram import Bot, Dispatcher, F
 from aiogram.client.default import DefaultBotProperties
 from aiogram.enums import ParseMode
 from aiogram.filters import Command
 from aiogram.types import (
-    Message,
-    InlineKeyboardMarkup,
-    InlineKeyboardButton,
-    CallbackQuery,
     BotCommand,
+    CallbackQuery,
+    InlineKeyboardButton,
+    InlineKeyboardMarkup,
+    Message,
 )
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from apscheduler.triggers.cron import CronTrigger
 from dotenv import load_dotenv
 
 from weather import (
-    get_weather_data,
-    get_air_status,
-    get_time_mode,
-    get_sky_text,
     calculate_ararat_score,
+    get_air_status,
     get_ararat_status_from_score,
+    get_sky_text,
+    get_time_mode,
+    get_weather_data,
 )
 from texts import TEXTS
 from db import (
-    init_db,
-    ensure_user,
-    set_user_language,
-    get_user_language,
-    subscribe_user,
-    unsubscribe_user,
-    is_user_subscribed,
-    get_all_subscribed_users,
-    add_photo,
-    get_photo_by_id,
     add_best_photo,
+    add_photo,
     clear_best_photos_today,
+    ensure_user,
+    get_all_subscribed_users,
     get_best_photos_today,
-    get_total_users,
-    get_total_subscribed,
+    get_photo_by_id,
     get_photos_count,
     get_recent_photos_count,
+    get_total_subscribed,
+    get_total_users,
+    get_user_language,
+    init_db,
+    is_user_subscribed,
+    set_user_language,
+    subscribe_user,
+    unsubscribe_user,
 )
 
 load_dotenv()
@@ -52,20 +54,29 @@ load_dotenv()
 TOKEN = os.getenv("BOT_TOKEN")
 ADMIN_CHAT_ID = os.getenv("ADMIN_CHAT_ID")
 
-bot = Bot(
-    token=TOKEN,
-    default=DefaultBotProperties(parse_mode=ParseMode.HTML)
+if not TOKEN:
+    raise RuntimeError("BOT_TOKEN не найден в .env")
+
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s | %(levelname)s | %(name)s | %(message)s",
 )
 
+logger = logging.getLogger("ararat_now")
+
+bot = Bot(
+    token=TOKEN,
+    default=DefaultBotProperties(parse_mode=ParseMode.HTML),
+)
 dp = Dispatcher()
 scheduler = AsyncIOScheduler(timezone="Asia/Yerevan")
 
 
-def t(lang: str, key: str, default=""):
+def t(lang: str, key: str, default: str = "") -> str:
     return TEXTS.get(lang, {}).get(key, default)
 
 
-def pick_from_list(values, default: str = "") -> str:
+def pick_from_list(values: Any, default: str = "") -> str:
     if isinstance(values, list) and values:
         return random.choice(values)
     if isinstance(values, str):
@@ -119,7 +130,7 @@ def get_language_name(lang: str) -> str:
     }.get(lang, "Русский 🇷🇺")
 
 
-def language_keyboard():
+def language_keyboard() -> InlineKeyboardMarkup:
     return InlineKeyboardMarkup(
         inline_keyboard=[
             [
@@ -131,46 +142,52 @@ def language_keyboard():
     )
 
 
-def action_keyboard(lang: str, chat_id: int):
-    rows = []
-
-    rows.append([
-        InlineKeyboardButton(
-            text=t(lang, "check_now_button", "👀 Проверить сейчас"),
-            callback_data="check_now_inline"
-        ),
-        InlineKeyboardButton(
-            text=t(lang, "oracle_button", "🔮 Оракул"),
-            callback_data="oracle"
-        )
-    ])
+def action_keyboard(lang: str, chat_id: int) -> InlineKeyboardMarkup:
+    rows = [
+        [
+            InlineKeyboardButton(
+                text=t(lang, "check_now_button", "👀 Проверить сейчас"),
+                callback_data="check_now_inline",
+            ),
+            InlineKeyboardButton(
+                text=t(lang, "oracle_button", "🔮 Оракул"),
+                callback_data="oracle",
+            ),
+        ]
+    ]
 
     if is_user_subscribed(chat_id):
-        rows.append([
-            InlineKeyboardButton(
-                text=t(lang, "unsubscribe_button", "🔕 Отключить"),
-                callback_data="unsubscribe"
-            )
-        ])
-    else:
-        rows.append([
-            InlineKeyboardButton(
-                text=t(lang, "subscribe_button", "🔔 Включить"),
-                callback_data="subscribe"
-            )
-        ])
-
-    rows.append([
-        InlineKeyboardButton(
-            text=t(lang, "photo_button", "📸 Отправить фото"),
-            callback_data="send_photo"
+        rows.append(
+            [
+                InlineKeyboardButton(
+                    text=t(lang, "unsubscribe_button", "🔕 Отключить"),
+                    callback_data="unsubscribe",
+                )
+            ]
         )
-    ])
+    else:
+        rows.append(
+            [
+                InlineKeyboardButton(
+                    text=t(lang, "subscribe_button", "🔔 Включить"),
+                    callback_data="subscribe",
+                )
+            ]
+        )
+
+    rows.append(
+        [
+            InlineKeyboardButton(
+                text=t(lang, "photo_button", "📸 Отправить фото"),
+                callback_data="send_photo",
+            )
+        ]
+    )
 
     return InlineKeyboardMarkup(inline_keyboard=rows)
 
 
-async def set_main_menu():
+async def set_main_menu() -> None:
     commands = [
         BotCommand(command="start", description="Запустить бота"),
         BotCommand(command="check_now", description="Проверить Арарат"),
@@ -181,24 +198,23 @@ async def set_main_menu():
     await bot.set_my_commands(commands)
 
 
-async def send_language_picker(message: Message):
+async def send_language_picker(message: Message) -> None:
     await message.answer(
         t(
             "ru",
             "welcome",
             "🏔 <b>Ararat Now</b>\n\n"
-            "Бот, который говорит — видно ли сегодня Арарат\n\n"
+            "Бот, который говорит, видно ли сегодня Арарат.\n\n"
             "🔔 При подписке:\n"
             "— утром ты получишь статус видимости\n"
             "— вечером лучшее фото дня 📸\n\n"
-            "Выбери язык:"
+            "Выбери язык:",
         ),
         reply_markup=language_keyboard(),
     )
 
 
 def get_status_with_score(data: dict) -> str:
-    recent_photos = 0
     crowd_bonus = 0
 
     try:
@@ -206,7 +222,6 @@ def get_status_with_score(data: dict) -> str:
         if recent_photos > 0:
             crowd_bonus = 10
     except Exception:
-        recent_photos = 0
         crowd_bonus = 0
 
     score = calculate_ararat_score(data, crowd_bonus=crowd_bonus)
@@ -262,7 +277,7 @@ def build_best_photo_caption(lang: str = "ru") -> str:
     return t(
         lang,
         "best_photo_day_caption",
-        "📸 Лучшие фото дня\n\nСегодня Арарат поймали так 👀"
+        "📸 Лучшие фото дня\n\nСегодня Арарат поймали так 👀",
     )
 
 
@@ -279,17 +294,7 @@ def should_send_notification(status_key: str, data: dict) -> bool:
     return False
 
 
-@dp.message(Command("start"))
-async def start_handler(message: Message):
-    chat_id = message.chat.id
-    ensure_user(chat_id)
-
-    lang = get_user_language(chat_id)
-
-    if not lang:
-        await send_language_picker(message)
-        return
-
+async def send_main_panel(message: Message, lang: str, chat_id: int) -> None:
     subscription_text = (
         t(lang, "subscribed_text", "Уведомления включены")
         if is_user_subscribed(chat_id)
@@ -303,119 +308,24 @@ async def start_handler(message: Message):
         f"{t(lang, 'check_prompt', 'Теперь можно проверить видимость')}"
     )
 
-    await message.answer(
-        text,
-        reply_markup=action_keyboard(lang, chat_id),
-    )
+    await message.answer(text, reply_markup=action_keyboard(lang, chat_id))
 
 
-@dp.callback_query()
-async def callback_handler(callback: CallbackQuery):
-    if callback.message is None:
-        await callback.answer()
+@dp.message(Command("start"))
+async def start_handler(message: Message) -> None:
+    chat_id = message.chat.id
+    ensure_user(chat_id)
+
+    lang = get_user_language(chat_id)
+    if not lang:
+        await send_language_picker(message)
         return
 
-    chat_id = callback.message.chat.id
-    data = callback.data
-
-    if data == "lang_ru":
-        ensure_user(chat_id)
-        set_user_language(chat_id, "ru")
-        lang = "ru"
-        await callback.message.answer(
-            f"{t(lang, 'language_set', 'Язык установлен')}\n\n{t(lang, 'check_prompt', 'Теперь можно проверить видимость')}",
-            reply_markup=action_keyboard(lang, chat_id),
-        )
-
-    elif data == "lang_en":
-        ensure_user(chat_id)
-        set_user_language(chat_id, "en")
-        lang = "en"
-        await callback.message.answer(
-            f"{t(lang, 'language_set', 'Language set')}\n\n{t(lang, 'check_prompt', 'Now you can check visibility')}",
-            reply_markup=action_keyboard(lang, chat_id),
-        )
-
-    elif data == "lang_hy":
-        ensure_user(chat_id)
-        set_user_language(chat_id, "hy")
-        lang = "hy"
-        await callback.message.answer(
-            f"{t(lang, 'language_set', 'Լեզուն ընտրված է')}\n\n{t(lang, 'check_prompt', 'Հիմա կարող ես ստուգել տեսանելիությունը')}",
-            reply_markup=action_keyboard(lang, chat_id),
-        )
-
-    elif data == "subscribe":
-        ensure_user(chat_id)
-        lang = get_user_language(chat_id) or "ru"
-        subscribe_user(chat_id)
-        await callback.message.answer(
-            t(lang, "subscribed_text", "Уведомления включены"),
-            reply_markup=action_keyboard(lang, chat_id),
-        )
-
-    elif data == "unsubscribe":
-        ensure_user(chat_id)
-        lang = get_user_language(chat_id) or "ru"
-        unsubscribe_user(chat_id)
-        await callback.message.answer(
-            t(lang, "unsubscribed_text", "Уведомления отключены"),
-            reply_markup=action_keyboard(lang, chat_id),
-        )
-
-    elif data == "send_photo":
-        lang = get_user_language(chat_id) or "ru"
-        await callback.message.answer(
-            t(lang, "photo_prompt", "Отправь фото Арарата 📸")
-        )
-
-    elif data == "check_now_inline":
-        lang = get_user_language(chat_id)
-
-        if not lang:
-            await send_language_picker(callback.message)
-            await callback.answer()
-            return
-
-        try:
-            data_weather = get_weather_data(lang)
-            status_key = get_status_with_score(data_weather)
-            text = build_weather_text(lang, data_weather, status_key)
-            await callback.message.answer(text)
-        except Exception as e:
-            traceback.print_exc()
-            await callback.message.answer(f"Ошибка: {repr(e)}")
-
-    elif data == "oracle":
-        lang = get_user_language(chat_id)
-
-        if not lang:
-            await send_language_picker(callback.message)
-            await callback.answer()
-            return
-
-        try:
-            data_weather = get_weather_data(lang)
-            status_key = get_status_with_score(data_weather)
-            phrase = safe_oracle_phrase(lang, status_key)
-
-            title = {
-                "ru": "🔮 <b>Арарат сегодня говорит:</b>",
-                "en": "🔮 <b>Ararat says today:</b>",
-                "hy": "🔮 <b>Արարատն այսօր ասում է․</b>",
-            }.get(lang, "🔮 <b>Арарат сегодня говорит:</b>")
-
-            await callback.message.answer(f"{title}\n\n<i>{phrase}</i>")
-
-        except Exception as e:
-            traceback.print_exc()
-            await callback.message.answer(f"Ошибка: {repr(e)}")
-
-    await callback.answer()
+    await send_main_panel(message, lang, chat_id)
 
 
 @dp.message(Command("subscribe"))
-async def subscribe_command(message: Message):
+async def subscribe_command(message: Message) -> None:
     chat_id = message.chat.id
     ensure_user(chat_id)
     lang = get_user_language(chat_id)
@@ -432,7 +342,7 @@ async def subscribe_command(message: Message):
 
 
 @dp.message(Command("unsubscribe"))
-async def unsubscribe_command(message: Message):
+async def unsubscribe_command(message: Message) -> None:
     chat_id = message.chat.id
     ensure_user(chat_id)
     lang = get_user_language(chat_id)
@@ -449,7 +359,7 @@ async def unsubscribe_command(message: Message):
 
 
 @dp.message(Command("check_now"))
-async def check_now_handler(message: Message):
+async def check_now_handler(message: Message) -> None:
     chat_id = message.chat.id
     ensure_user(chat_id)
     lang = get_user_language(chat_id)
@@ -463,15 +373,13 @@ async def check_now_handler(message: Message):
         status_key = get_status_with_score(data)
         text = build_weather_text(lang, data, status_key)
         await message.answer(text)
-
     except Exception as e:
-        print("=== FULL ERROR /check_now ===")
-        traceback.print_exc()
+        logger.exception("Ошибка в /check_now")
         await message.answer(f"Ошибка: {repr(e)}")
 
 
 @dp.message(Command("oracle"))
-async def oracle_handler(message: Message):
+async def oracle_handler(message: Message) -> None:
     chat_id = message.chat.id
     ensure_user(chat_id)
     lang = get_user_language(chat_id)
@@ -492,14 +400,13 @@ async def oracle_handler(message: Message):
         }.get(lang, "🔮 <b>Арарат сегодня говорит:</b>")
 
         await message.answer(f"{title}\n\n<i>{phrase}</i>")
-
     except Exception as e:
-        traceback.print_exc()
+        logger.exception("Ошибка в /oracle")
         await message.answer(f"Ошибка: {repr(e)}")
 
 
 @dp.message(Command("stats"))
-async def stats_handler(message: Message):
+async def stats_handler(message: Message) -> None:
     if str(message.chat.id) != str(ADMIN_CHAT_ID):
         return
 
@@ -514,21 +421,18 @@ async def stats_handler(message: Message):
             f"🔔 Подписаны: <b>{subscribed}</b>\n"
             f"📸 Фото в базе: <b>{photos}</b>"
         )
-
         await message.answer(text)
-
     except Exception as e:
-        traceback.print_exc()
+        logger.exception("Ошибка в /stats")
         await message.answer(f"Ошибка: {repr(e)}")
 
 
 @dp.message(Command("best_today"))
-async def best_today_handler(message: Message):
+async def best_today_handler(message: Message) -> None:
     if str(message.chat.id) != str(ADMIN_CHAT_ID):
         return
 
-    parts = message.text.split()
-
+    parts = (message.text or "").split()
     if len(parts) < 2:
         await message.answer("Используй так: /best_today 12")
         return
@@ -540,7 +444,6 @@ async def best_today_handler(message: Message):
         return
 
     photo = get_photo_by_id(photo_id)
-
     if not photo:
         await message.answer("Фото с таким id не найдено")
         return
@@ -550,7 +453,7 @@ async def best_today_handler(message: Message):
 
 
 @dp.message(Command("clear_best_today"))
-async def clear_best_today_handler(message: Message):
+async def clear_best_today_handler(message: Message) -> None:
     if str(message.chat.id) != str(ADMIN_CHAT_ID):
         return
 
@@ -559,12 +462,11 @@ async def clear_best_today_handler(message: Message):
 
 
 @dp.message(Command("send_best_now"))
-async def send_best_now_handler(message: Message):
+async def send_best_now_handler(message: Message) -> None:
     if str(message.chat.id) != str(ADMIN_CHAT_ID):
         return
 
     best_photos = get_best_photos_today()
-
     if not best_photos:
         await message.answer("На сегодня фото дня пока не выбраны")
         return
@@ -583,19 +485,182 @@ async def send_best_now_handler(message: Message):
                     photo=photo["file_id"],
                     caption=caption,
                 )
-
             sent += 1
         except Exception:
-            traceback.print_exc()
+            logger.exception("Ошибка при send_best_now для user_id=%s", user_id)
 
     await message.answer(f"Подборка дня отправлена: {sent} пользователям")
 
 
-@dp.message()
-async def text_language_handler(message: Message):
-    if message.photo:
+@dp.callback_query(F.data.startswith("lang_"))
+async def language_callback(callback: CallbackQuery) -> None:
+    if callback.message is None or callback.data is None:
+        await callback.answer()
         return
 
+    chat_id = callback.message.chat.id
+    ensure_user(chat_id)
+
+    lang = callback.data.replace("lang_", "")
+    if lang not in ("ru", "en", "hy"):
+        await callback.answer("Unknown language")
+        return
+
+    set_user_language(chat_id, lang)
+
+    await callback.message.answer(
+        f"{t(lang, 'language_set', 'Язык установлен')}\n\n"
+        f"{t(lang, 'check_prompt', 'Теперь можно проверить видимость')}",
+        reply_markup=action_keyboard(lang, chat_id),
+    )
+    await callback.answer()
+
+
+@dp.callback_query(F.data == "subscribe")
+async def subscribe_callback(callback: CallbackQuery) -> None:
+    if callback.message is None:
+        await callback.answer()
+        return
+
+    chat_id = callback.message.chat.id
+    ensure_user(chat_id)
+    lang = get_user_language(chat_id) or "ru"
+
+    subscribe_user(chat_id)
+    await callback.message.answer(
+        t(lang, "subscribed_text", "Уведомления включены"),
+        reply_markup=action_keyboard(lang, chat_id),
+    )
+    await callback.answer()
+
+
+@dp.callback_query(F.data == "unsubscribe")
+async def unsubscribe_callback(callback: CallbackQuery) -> None:
+    if callback.message is None:
+        await callback.answer()
+        return
+
+    chat_id = callback.message.chat.id
+    ensure_user(chat_id)
+    lang = get_user_language(chat_id) or "ru"
+
+    unsubscribe_user(chat_id)
+    await callback.message.answer(
+        t(lang, "unsubscribed_text", "Уведомления отключены"),
+        reply_markup=action_keyboard(lang, chat_id),
+    )
+    await callback.answer()
+
+
+@dp.callback_query(F.data == "send_photo")
+async def send_photo_callback(callback: CallbackQuery) -> None:
+    if callback.message is None:
+        await callback.answer()
+        return
+
+    chat_id = callback.message.chat.id
+    lang = get_user_language(chat_id) or "ru"
+
+    await callback.message.answer(
+        t(lang, "photo_prompt", "Отправь фото Арарата 📸")
+    )
+    await callback.answer()
+
+
+@dp.callback_query(F.data == "check_now_inline")
+async def check_now_inline_callback(callback: CallbackQuery) -> None:
+    if callback.message is None:
+        await callback.answer()
+        return
+
+    chat_id = callback.message.chat.id
+    lang = get_user_language(chat_id)
+
+    if not lang:
+        await send_language_picker(callback.message)
+        await callback.answer()
+        return
+
+    try:
+        data_weather = get_weather_data(lang)
+        status_key = get_status_with_score(data_weather)
+        text = build_weather_text(lang, data_weather, status_key)
+        await callback.message.answer(text)
+    except Exception as e:
+        logger.exception("Ошибка в inline check_now")
+        await callback.message.answer(f"Ошибка: {repr(e)}")
+
+    await callback.answer()
+
+
+@dp.callback_query(F.data == "oracle")
+async def oracle_callback(callback: CallbackQuery) -> None:
+    if callback.message is None:
+        await callback.answer()
+        return
+
+    chat_id = callback.message.chat.id
+    lang = get_user_language(chat_id)
+
+    if not lang:
+        await send_language_picker(callback.message)
+        await callback.answer()
+        return
+
+    try:
+        data_weather = get_weather_data(lang)
+        status_key = get_status_with_score(data_weather)
+        phrase = safe_oracle_phrase(lang, status_key)
+
+        title = {
+            "ru": "🔮 <b>Арарат сегодня говорит:</b>",
+            "en": "🔮 <b>Ararat says today:</b>",
+            "hy": "🔮 <b>Արարատն այսօր ասում է․</b>",
+        }.get(lang, "🔮 <b>Арарат сегодня говорит:</b>")
+
+        await callback.message.answer(f"{title}\n\n<i>{phrase}</i>")
+    except Exception as e:
+        logger.exception("Ошибка в inline oracle")
+        await callback.message.answer(f"Ошибка: {repr(e)}")
+
+    await callback.answer()
+
+
+@dp.message(F.photo)
+async def handle_photo(message: Message) -> None:
+    chat_id = message.chat.id
+    ensure_user(chat_id)
+    lang = get_user_language(chat_id) or "ru"
+
+    try:
+        file_id = message.photo[-1].file_id
+        photo_id = add_photo(chat_id, file_id)
+
+        caption = (
+            f"{t(lang, 'photo_caption_prefix', 'Новое фото Арарата')}\n"
+            f"photo_id: {photo_id}\n"
+            f"from chat_id: {chat_id}"
+        )
+
+        if ADMIN_CHAT_ID:
+            await bot.send_photo(
+                chat_id=int(ADMIN_CHAT_ID),
+                photo=file_id,
+                caption=caption,
+            )
+
+        await message.answer(
+            t(lang, "photo_received", "📸 Фото принято.")
+        )
+    except Exception:
+        logger.exception("Ошибка при обработке фото")
+        await message.answer(
+            t(lang, "photo_received", "📸 Фото принято.")
+        )
+
+
+@dp.message(F.text)
+async def text_language_handler(message: Message) -> None:
     raw = (message.text or "").strip().lower()
 
     language_map = {
@@ -621,49 +686,13 @@ async def text_language_handler(message: Message):
     set_user_language(chat_id, lang)
 
     await message.answer(
-        f"{t(lang, 'language_set', 'Язык установлен')}\n\n{t(lang, 'check_prompt', 'Теперь можно проверить видимость')}",
+        f"{t(lang, 'language_set', 'Язык установлен')}\n\n"
+        f"{t(lang, 'check_prompt', 'Теперь можно проверить видимость')}",
         reply_markup=action_keyboard(lang, chat_id),
     )
 
 
-@dp.message()
-async def handle_photo(message: Message):
-    if not message.photo:
-        return
-
-    chat_id = message.chat.id
-    ensure_user(chat_id)
-    lang = get_user_language(chat_id) or "ru"
-
-    try:
-        file_id = message.photo[-1].file_id
-        photo_id = add_photo(chat_id, file_id)
-
-        caption = (
-            f"{t(lang, 'photo_caption_prefix', 'Новое фото Арарата')}\n"
-            f"photo_id: {photo_id}\n"
-            f"from chat_id: {chat_id}"
-        )
-
-        if ADMIN_CHAT_ID:
-            await bot.send_photo(
-                chat_id=int(ADMIN_CHAT_ID),
-                photo=file_id,
-                caption=caption,
-            )
-
-        await message.answer(
-            t(lang, "photo_received", "📸 Фото принято.")
-        )
-
-    except Exception:
-        traceback.print_exc()
-        await message.answer(
-            t(lang, "photo_received", "📸 Фото принято.")
-        )
-
-
-async def send_morning_notifications():
+async def send_morning_notifications() -> None:
     users = get_all_subscribed_users()
 
     for chat_id in users:
@@ -679,15 +708,14 @@ async def send_morning_notifications():
             await bot.send_message(chat_id, text)
 
         except Exception:
-            print(f"=== FULL ERROR notify chat_id={chat_id} ===")
-            traceback.print_exc()
+            logger.exception("Ошибка morning notify chat_id=%s", chat_id)
 
 
-async def send_evening_best_photo():
+async def send_evening_best_photo() -> None:
     best_photos = get_best_photos_today()
 
     if not best_photos:
-        print("No best photos selected for evening push")
+        logger.info("No best photos selected for evening push")
         return
 
     users = get_all_subscribed_users()
@@ -703,27 +731,34 @@ async def send_evening_best_photo():
                     photo=photo["file_id"],
                     caption=caption,
                 )
-
         except Exception:
-            print(f"=== ERROR evening best photos user_id={user_id} ===")
-            traceback.print_exc()
+            logger.exception("Ошибка evening best photos user_id=%s", user_id)
 
 
-async def main():
+async def on_startup() -> None:
     init_db()
     await set_main_menu()
 
     scheduler.add_job(
         send_morning_notifications,
-        CronTrigger(hour=10, minute=0, timezone="Asia/Yerevan")
+        CronTrigger(hour=10, minute=0, timezone="Asia/Yerevan"),
+        id="morning_notifications",
+        replace_existing=True,
     )
 
     scheduler.add_job(
         send_evening_best_photo,
-        CronTrigger(hour=19, minute=0, timezone="Asia/Yerevan")
+        CronTrigger(hour=19, minute=0, timezone="Asia/Yerevan"),
+        id="evening_best_photo",
+        replace_existing=True,
     )
 
     scheduler.start()
+    logger.info("Bot started successfully")
+
+
+async def main() -> None:
+    await on_startup()
     await dp.start_polling(bot)
 
 
