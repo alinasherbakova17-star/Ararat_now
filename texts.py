@@ -84,6 +84,14 @@ TEXTS = {
             "smog": "Арарат ушел искать чистый воздух",
         },
 
+       "night_decision_text": {
+          "excellent": "Даже ночью гора может читаться силуэтом, если знаешь куда смотреть",
+          "good": "Ночью атмосфера красивее деталей, но контур может пойматься",
+          "smog": "Ночь и дымка вместе спрятали Арарат",
+          "bad": "Сейчас Арарат скорее в настроении, чем в видимости",
+        },
+
+        
         # 🌫 воздух
         "air_status": {
             "air_clean": "воздух чистый",
@@ -233,6 +241,13 @@ TEXTS = {
             "smog": "air kills the view",
         },
 
+        "night_decision_text": {
+            "excellent": "Even at night, the mountain may appear as a silhouette if you know where to look",
+            "good": "At night it is more about atmosphere than detail, but the outline may still appear",
+            "smog": "Night and haze have hidden Ararat from view",
+            "bad": "Right now Ararat is more of a mood than a visible scene",
+        },
+
         "air_status": {
             "air_clean": "clean air",
             "air_ok": "normal air",
@@ -378,6 +393,13 @@ TEXTS = {
             "bad": "չի երևում",
             "smog": "օդը խեղդում է տեսարանը",
         },
+
+        "night_decision_text": {
+            "excellent": "Նույնիսկ գիշերը լեռը կարող է ուրվագծով երևալ, եթե գիտես ուր նայել",
+            "good": "Գիշերը սա ավելի շատ մթնոլորտի մասին է, քան մանրամասների, բայց ուրվագիծը կարող է երևալ",
+            "smog": "Գիշերն ու մշուշը միասին թաքցրել են Արարատը",
+            "bad": "Հիմա Արարատն ավելի շատ տրամադրություն է, քան տեսանելի պատկեր",
+       },
 
         "air_status": {
             "air_clean": "մաքուր օդ",

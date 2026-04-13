@@ -114,6 +114,11 @@ def safe_decision_line(lang: str, status_key: str) -> str:
         TEXTS.get("ru", {}).get("decision_text", {}).get(status_key, status_key),
     )
 
+def safe_night_decision_line(lang: str, status_key: str) -> str:
+    return TEXTS.get(lang, {}).get("night_decision_text", {}).get(
+        status_key,
+        TEXTS.get("ru", {}).get("night_decision_text", {}).get(status_key, status_key),
+    )
 
 def safe_time_tail(lang: str, time_mode: str) -> str:
     values = TEXTS.get(lang, {}).get("time_tail", {}).get(time_mode)
@@ -236,9 +241,23 @@ def build_weather_text(lang: str, data: dict, status_key: str) -> str:
 
     status_line = safe_status_line(lang, status_key)
     air_line = safe_air_line(lang, air_key)
-    decision_line = safe_decision_line(lang, status_key)
 
-    time_tail = safe_time_tail(lang, time_mode) if status_key in ("good", "excellent") else ""
+    is_night = time_mode == "night"
+
+    if is_night:
+        decision_line = safe_night_decision_line(lang, status_key)
+        decision_block = f"🌙 <i>{decision_line}</i>"
+    else:
+        decision_line = safe_decision_line(lang, status_key)
+        decision_block = (
+            f"🎯 {t(lang, 'decision_label', 'Вердикт')}: "
+            f"<i>{decision_line}</i>"
+        )
+
+    time_tail = ""
+       if not is_night and status_key in ("good", "excellent"):
+       time_tail = safe_time_tail(lang, time_mode)
+
     tail_block = f"\n\n{time_tail}" if time_tail else ""
 
     return (
@@ -251,7 +270,7 @@ def build_weather_text(lang: str, data: dict, status_key: str) -> str:
         f"👀 {t(lang, 'visibility_label', 'Видимость')}: {visibility_km} km\n\n"
         f"🌫 {t(lang, 'air_label', 'Воздух')}: <b>{air_line}</b>\n"
         f"AQI {data['aqi']} • PM2.5 {round(data['pm25'])} • PM10 {round(data['pm10'])}\n\n"
-        f"🎯 {t(lang, 'decision_label', 'Вердикт')}: <i>{decision_line}</i>"
+        f"{decision_block}"
         f"{tail_block}"
     )
 
