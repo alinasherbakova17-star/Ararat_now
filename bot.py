@@ -255,8 +255,8 @@ def build_weather_text(lang: str, data: dict, status_key: str) -> str:
         )
 
     time_tail = ""
-       if not is_night and status_key in ("good", "excellent"):
-       time_tail = safe_time_tail(lang, time_mode)
+    if not is_night and status_key in ("good", "excellent"):
+        time_tail = safe_time_tail(lang, time_mode)
 
     tail_block = f"\n\n{time_tail}" if time_tail else ""
 
