@@ -26,6 +26,34 @@ def map_lang_for_weather(lang: str) -> str:
     return "ru" if lang == "ru" else "en"
 
 
+def map_lang_for_air(lang: str) -> str:
+    return lang if lang in ("ru", "en", "hy") else "en"
+
+
+# ------------------------
+# воздух из airquality.am
+# ------------------------
+def get_airquality_am_data(lang="ru"):
+    locale = map_lang_for_air(lang)
+
+    url = f"https://airquality.am/{locale}/air-quality-app/v1/region/yerevan.json"
+
+    headers = {
+        "User-Agent": "AraratNowBot/1.0"
+    }
+
+    response = requests.get(url, headers=headers, timeout=10)
+    response.raise_for_status()
+
+    data = response.json()
+
+    return {
+        "aqi": data.get("aqi", 0),
+        "pm25": data.get("pm2.5", 0),
+        "pm10": data.get("pm10", 0),
+    }
+
+
 # ------------------------
 # получение данных
 # ------------------------
@@ -37,46 +65,43 @@ def get_weather_data(lang="ru"):
         f"?lat={LAT}&lon={LON}&appid={API_KEY}&units=metric&lang={weather_lang}"
     )
 
-    air_url = (
-        f"https://api.openweathermap.org/data/2.5/air_pollution"
-        f"?lat={LAT}&lon={LON}&appid={API_KEY}"
-    )
-
     weather_response = requests.get(weather_url, timeout=10)
-    air_response = requests.get(air_url, timeout=10)
-
     weather_response.raise_for_status()
-    air_response.raise_for_status()
 
     weather_data = weather_response.json()
-    air_data = air_response.json()
 
+    # погода
     temp = weather_data.get("main", {}).get("temp", 0)
     wind = weather_data.get("wind", {}).get("speed", 0)
     clouds = weather_data.get("clouds", {}).get("all", 0)
     visibility = weather_data.get("visibility", 0)
 
-    air_list = air_data.get("list", [{}])
-    air_main = air_list[0].get("main", {})
-    air_components = air_list[0].get("components", {})
+    weather_main = weather_data.get("weather", [{}])[0].get("main", "")
+    weather_description = weather_data.get("weather", [{}])[0].get("description", "")
 
-    aqi = air_main.get("aqi", 0)
-    pm25 = air_components.get("pm2_5", 0)
-    pm10 = air_components.get("pm10", 0)
+    rain_1h = weather_data.get("rain", {}).get("1h", 0) or 0
+    snow_1h = weather_data.get("snow", {}).get("1h", 0) or 0
+
+    # воздух (новый источник)
+    air_data = get_airquality_am_data(lang)
 
     return {
         "temp": temp,
         "wind": wind,
         "clouds": clouds,
         "visibility": visibility,
-        "aqi": aqi,
-        "pm25": pm25,
-        "pm10": pm10,
+        "aqi": air_data["aqi"],
+        "pm25": air_data["pm25"],
+        "pm10": air_data["pm10"],
+        "weather_main": weather_main,
+        "weather_description": weather_description,
+        "rain_1h": rain_1h,
+        "snow_1h": snow_1h,
     }
 
 
 # ------------------------
-# текст неба (С COVERED)
+# текст неба
 # ------------------------
 def get_sky_text(lang: str, clouds: int) -> str:
     sky_map = {
@@ -86,7 +111,7 @@ def get_sky_text(lang: str, clouds: int) -> str:
             "soft": "переменная облачность",
             "cloudy": "облачно",
             "dense": "плотные облака",
-            "covered": "полностью закрыто",
+            "covered": "полностью закрыто облаками",
         },
         "en": {
             "clear": "clear",
@@ -94,7 +119,7 @@ def get_sky_text(lang: str, clouds: int) -> str:
             "soft": "partly cloudy",
             "cloudy": "cloudy",
             "dense": "dense clouds",
-            "covered": "fully covered",
+            "covered": "fully covered by clouds",
         },
         "hy": {
             "clear": "պարզ է",
@@ -102,7 +127,7 @@ def get_sky_text(lang: str, clouds: int) -> str:
             "soft": "փոփոխական ամպամածություն",
             "cloudy": "ամպամած",
             "dense": "խիտ ամպեր",
-            "covered": "ամբողջությամբ փակ է",
+            "covered": "ամբողջությամբ փակ է ամպերով",
         },
     }
 
@@ -123,83 +148,86 @@ def get_sky_text(lang: str, clouds: int) -> str:
 
 
 # ------------------------
-# воздух
+# воздух (новая шкала)
 # ------------------------
 def get_air_status(data: dict) -> str:
     aqi = data["aqi"]
     pm25 = data["pm25"]
 
-    if aqi <= 2 and pm25 <= 15:
+    if aqi <= 25 and pm25 <= 10:
         return "air_clean"
-    if aqi == 3 and pm25 <= 35:
+
+    if aqi <= 60 and pm25 <= 20:
         return "air_ok"
-    if aqi == 4 or pm25 <= 55:
+
+    if aqi <= 100 and pm25 <= 35:
         return "air_heavy"
+
     return "air_bad"
 
 
 # ------------------------
-# SCORE система
+# осадки штраф
+# ------------------------
+def get_precipitation_penalty(data: dict) -> int:
+    rain_1h = data.get("rain_1h", 0) or 0
+    snow_1h = data.get("snow_1h", 0) or 0
+    weather_main = (data.get("weather_main") or "").lower()
+
+    if "thunderstorm" in weather_main:
+        return 45
+
+    penalty = 0
+
+    if rain_1h > 0:
+        penalty += 20 if rain_1h >= 1 else 10
+
+    if snow_1h > 0:
+        penalty += 20 if snow_1h >= 0.5 else 10
+
+    return penalty
+
+
+# ------------------------
+# SCORE
 # ------------------------
 def calculate_ararat_score(data: dict, crowd_bonus: int = 0) -> int:
     visibility = data["visibility"]
     clouds = data["clouds"]
     air_status = get_air_status(data)
 
-    # visibility
-    if visibility >= 10000:
-        visibility_score = 50
-    elif visibility >= 8000:
-        visibility_score = 40
-    elif visibility >= 6000:
-        visibility_score = 30
-    elif visibility >= 4000:
-        visibility_score = 20
-    else:
-        visibility_score = 5
+    visibility_score = (
+        50 if visibility >= 10000 else
+        40 if visibility >= 8000 else
+        30 if visibility >= 6000 else
+        20 if visibility >= 4000 else
+        5
+    )
 
-    # air
     air_scores = {
         "air_clean": 30,
         "air_ok": 22,
-        "air_heavy": 10,
+        "air_heavy": 12,
         "air_bad": 0,
     }
-    air_score = air_scores.get(air_status, 0)
 
-    # clouds (НЕ убивают всё)
-    if clouds <= 20:
-        clouds_score = 20
-    elif clouds <= 40:
-        clouds_score = 16
-    elif clouds <= 60:
-        clouds_score = 12
-    elif clouds <= 80:
-        clouds_score = 8
-    else:
-        clouds_score = 4
+    clouds_score = (
+        20 if clouds <= 20 else
+        16 if clouds <= 40 else
+        12 if clouds <= 60 else
+        8 if clouds <= 80 else
+        4
+    )
 
-    total = visibility_score + air_score + clouds_score + crowd_bonus
-    return min(total, 100)
+    precip_penalty = get_precipitation_penalty(data)
+
+    total = visibility_score + air_scores.get(air_status, 0) + clouds_score + crowd_bonus - precip_penalty
+
+    return max(0, min(total, 100))
 
 
 # ------------------------
-# confidence
-# ------------------------
-def get_visibility_confidence(data: dict) -> str:
-    visibility = data["visibility"]
-    clouds = data["clouds"]
-    air_status = get_air_status(data)
-
-    if visibility >= 9000 and air_status in ("air_clean", "air_ok") and clouds <= 60:
-        return "high"
-    if visibility >= 7000 and air_status != "air_bad":
-        return "medium"
-    return "low"
-
-
-# ------------------------
-# ГЛАВНАЯ ЛОГИКА (с covered)
+# финальный статус
 # ------------------------
 def get_ararat_status_from_score(score: int, data: dict) -> str:
     visibility = data["visibility"]
@@ -208,26 +236,43 @@ def get_ararat_status_from_score(score: int, data: dict) -> str:
     pm25 = data["pm25"]
     pm10 = data["pm10"]
 
-    # смог
-    if aqi >= 4 or pm25 >= 35 or pm10 >= 50:
-        return "smog"
+    rain_1h = data.get("rain_1h", 0) or 0
+    snow_1h = data.get("snow_1h", 0) or 0
+    weather_main = (data.get("weather_main") or "").lower()
 
-    # 🔥 если всё закрыто
-    if clouds >= 95:
-        if visibility >= 9000:
-            return "covered"
+    if "thunderstorm" in weather_main:
         return "bad"
 
-    # 🔥 если видно далеко — не убиваем облаками
+    if rain_1h >= 3 or snow_1h >= 2:
+        return "bad"
+
+    if (
+        aqi >= 100
+        or pm25 >= 35
+        or pm10 >= 50
+        or (aqi >= 70 and visibility < 7000)
+    ):
+        return "smog"
+
+    if clouds >= 95:
+        return "covered" if visibility >= 9000 else "bad"
+
+    if rain_1h > 0 or snow_1h > 0:
+        if score >= 75:
+            return "good"
+        if score >= 50:
+            return "cloudy"
+        if score >= 30:
+            return "medium"
+        return "bad"
+
     if visibility >= 9000:
         if clouds < 40:
             return "excellent"
         elif clouds < 80:
             return "good"
-        else:
-            return "cloudy"
+        return "cloudy"
 
-    # fallback
     if score >= 80:
         return "excellent"
     if score >= 65:
@@ -243,8 +288,7 @@ def get_ararat_status_from_score(score: int, data: dict) -> str:
 # время суток
 # ------------------------
 def get_time_mode() -> str:
-    now = datetime.now(ZoneInfo("Asia/Yerevan"))
-    hour = now.hour
+    hour = datetime.now(ZoneInfo("Asia/Yerevan")).hour
 
     if 6 <= hour < 12:
         return "morning"
