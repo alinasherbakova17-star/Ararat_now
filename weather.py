@@ -293,7 +293,7 @@ def get_ararat_status_from_score(score: int, data: dict) -> str:
         return "bad"
 
     # ------------------------
-    # 2. СМОГ (теперь адекватный)
+    # 2. смог
     # ------------------------
     if (
         aqi >= 100
@@ -307,7 +307,9 @@ def get_ararat_status_from_score(score: int, data: dict) -> str:
     # 3. полностью закрыто
     # ------------------------
     if clouds >= 95:
-        return "covered" if visibility >= 9000 else "bad"
+        if visibility >= 9000:
+            return "covered"
+        return "bad"
 
     # ------------------------
     # 4. осадки
@@ -322,14 +324,19 @@ def get_ararat_status_from_score(score: int, data: dict) -> str:
         return "bad"
 
     # ------------------------
-    # 5. если видно далеко
+    # 5. ОСНОВНАЯ ЛОГИКА (фикс облаков)
     # ------------------------
     if visibility >= 9000:
-        if clouds < 40 and aqi < 60:
+        if clouds < 30 and aqi < 60:
             return "excellent"
-        elif clouds < 80:
+
+        if clouds < 50:
             return "good"
-        return "cloudy"
+
+        if clouds < 80:
+            return "cloudy"
+
+        return "bad"
 
     # ------------------------
     # 6. fallback
@@ -343,7 +350,6 @@ def get_ararat_status_from_score(score: int, data: dict) -> str:
     if score >= 30:
         return "medium"
     return "bad"
-
 # ------------------------
 # время суток
 # ------------------------
