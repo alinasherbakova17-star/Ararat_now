@@ -244,22 +244,42 @@ def build_weather_text(lang: str, data: dict, status_key: str) -> str:
 
     is_night = time_mode == "night"
 
-    if is_night:
-        decision_line = safe_night_decision_line(lang, status_key)
-        decision_block = f"🌙 <i>{decision_line}</i>"
-    else:
+    # ------------------------
+    # ВЕРДИКТ И ТЭИЛ
+    # ------------------------
+    decision_line = ""
+    tail_block = ""
+
+    if not is_night:
         decision_line = safe_decision_line(lang, status_key)
-        decision_block = (
-            f"🎯 {t(lang, 'decision_label', 'Вердикт')}: "
-            f"<i>{decision_line}</i>"
+    else:
+        tail = safe_time_tail(lang, time_mode)
+        if tail:
+            tail_block = f"\n\n{tail}"
+
+    # ------------------------
+    # ВИДИМОСТЬ (СКРЫВАЕМ НОЧЬЮ)
+    # ------------------------
+    visibility_block = ""
+
+    if not is_night:
+        visibility_block = (
+            f"👀 {t(lang, 'visibility_label', 'Видимость')}: {visibility_km} km\n\n"
         )
 
-    time_tail = ""
-    if not is_night and status_key in ("good", "excellent"):
-        time_tail = safe_time_tail(lang, time_mode)
+    # ------------------------
+    # ВЕРДИКТ БЛОК
+    # ------------------------
+    verdict_block = ""
 
-    tail_block = f"\n\n{time_tail}" if time_tail else ""
+    if decision_line:
+        verdict_block = (
+            f"\n\n🎯 {t(lang, 'decision_label', 'Вердикт')}: <i>{decision_line}</i>"
+        )
 
+    # ------------------------
+    # ФИНАЛ
+    # ------------------------
     return (
         f"<b>🏔 Ararat Now</b>\n\n"
         f"<i>{status_line}</i>\n\n"
@@ -267,10 +287,10 @@ def build_weather_text(lang: str, data: dict, status_key: str) -> str:
         f"🌡 {t(lang, 'temp_label', 'Температура')}: <b>{round(data['temp'])}°C</b>\n"
         f"💨 {t(lang, 'wind_label', 'Ветер')}: {round(data['wind'], 1)} m/s\n"
         f"☁️ {t(lang, 'clouds_label', 'Облачность')}: {data['clouds']}%\n"
-        f"👀 {t(lang, 'visibility_label', 'Видимость')}: {visibility_km} km\n\n"
+        f"{visibility_block}"
         f"🌫 {t(lang, 'air_label', 'Воздух')}: <b>{air_line}</b>\n"
-        f"AQI {data['aqi']} • PM2.5 {round(data['pm25'])} • PM10 {round(data['pm10'])}\n\n"
-        f"{decision_block}"
+        f"AQI {data['aqi']} • PM2.5 {round(data['pm25'])} • PM10 {round(data['pm10'])}"
+        f"{verdict_block}"
         f"{tail_block}"
     )
 
