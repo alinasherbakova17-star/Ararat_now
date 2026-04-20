@@ -194,37 +194,80 @@ def get_precipitation_penalty(data: dict) -> int:
 def calculate_ararat_score(data: dict, crowd_bonus: int = 0) -> int:
     visibility = data["visibility"]
     clouds = data["clouds"]
+    aqi = data["aqi"]
+    pm25 = data["pm25"]
+
     air_status = get_air_status(data)
 
-    visibility_score = (
-        50 if visibility >= 10000 else
-        40 if visibility >= 8000 else
-        30 if visibility >= 6000 else
-        20 if visibility >= 4000 else
-        5
-    )
+    # ------------------------
+    # visibility (ОСЛАБИЛИ)
+    # ------------------------
+    if visibility >= 10000:
+        visibility_score = 35
+    elif visibility >= 8000:
+        visibility_score = 25
+    elif visibility >= 6000:
+        visibility_score = 15
+    elif visibility >= 4000:
+        visibility_score = 8
+    else:
+        visibility_score = 3
 
+    # ------------------------
+    # воздух (УСИЛИЛИ)
+    # ------------------------
     air_scores = {
         "air_clean": 30,
-        "air_ok": 22,
-        "air_heavy": 12,
+        "air_ok": 25,
+        "air_heavy": 15,
         "air_bad": 0,
     }
+    air_score = air_scores.get(air_status, 0)
 
-    clouds_score = (
-        20 if clouds <= 20 else
-        16 if clouds <= 40 else
-        12 if clouds <= 60 else
-        8 if clouds <= 80 else
-        4
-    )
+    # ------------------------
+    # облака
+    # ------------------------
+    if clouds <= 20:
+        clouds_score = 20
+    elif clouds <= 40:
+        clouds_score = 16
+    elif clouds <= 60:
+        clouds_score = 12
+    elif clouds <= 80:
+        clouds_score = 8
+    else:
+        clouds_score = 4
 
+    # ------------------------
+    # осадки
+    # ------------------------
     precip_penalty = get_precipitation_penalty(data)
 
-    total = visibility_score + air_scores.get(air_status, 0) + clouds_score + crowd_bonus - precip_penalty
+    # ------------------------
+    # haze (дымка от воздуха)
+    # ------------------------
+    haze_penalty = 0
+
+    if aqi >= 80:
+        haze_penalty = 20
+    elif aqi >= 60:
+        haze_penalty = 12
+    elif aqi >= 40:
+        haze_penalty = 6
+
+    # ------------------------
+    # итог
+    # ------------------------
+    total = (
+        visibility_score
+        + air_score
+        + clouds_score
+        + crowd_bonus
+        - precip_penalty
+        - haze_penalty
+    )
 
     return max(0, min(total, 100))
-
 
 # ------------------------
 # финальный статус
@@ -240,12 +283,18 @@ def get_ararat_status_from_score(score: int, data: dict) -> str:
     snow_1h = data.get("snow_1h", 0) or 0
     weather_main = (data.get("weather_main") or "").lower()
 
+    # ------------------------
+    # 1. жесткие стоп-факторы
+    # ------------------------
     if "thunderstorm" in weather_main:
         return "bad"
 
     if rain_1h >= 3 or snow_1h >= 2:
         return "bad"
 
+    # ------------------------
+    # 2. СМОГ (теперь адекватный)
+    # ------------------------
     if (
         aqi >= 100
         or pm25 >= 35
@@ -254,11 +303,17 @@ def get_ararat_status_from_score(score: int, data: dict) -> str:
     ):
         return "smog"
 
+    # ------------------------
+    # 3. полностью закрыто
+    # ------------------------
     if clouds >= 95:
         return "covered" if visibility >= 9000 else "bad"
 
+    # ------------------------
+    # 4. осадки
+    # ------------------------
     if rain_1h > 0 or snow_1h > 0:
-        if score >= 75:
+        if score >= 70:
             return "good"
         if score >= 50:
             return "cloudy"
@@ -266,23 +321,28 @@ def get_ararat_status_from_score(score: int, data: dict) -> str:
             return "medium"
         return "bad"
 
+    # ------------------------
+    # 5. если видно далеко
+    # ------------------------
     if visibility >= 9000:
-        if clouds < 40:
+        if clouds < 40 and aqi < 60:
             return "excellent"
         elif clouds < 80:
             return "good"
         return "cloudy"
 
-    if score >= 80:
+    # ------------------------
+    # 6. fallback
+    # ------------------------
+    if score >= 75:
         return "excellent"
-    if score >= 65:
+    if score >= 60:
         return "good"
     if score >= 45:
         return "cloudy"
-    if score >= 25:
+    if score >= 30:
         return "medium"
     return "bad"
-
 
 # ------------------------
 # время суток
