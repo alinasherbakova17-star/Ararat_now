@@ -49,8 +49,8 @@ TEXTS = {
         ],
         "cloudy": [
             "Облака тоже хотят внимания",
-            "Облака плотные, Арарат прячется",
-            "Облачно. Проверь в другой раз",
+            "Облака плотные, Арарат прячется, но выглядывает",
+            "Арарат частично виден, но облака мешают",
         ],
         "covered": [
             "Сегодня Арарат взял выходной",
@@ -77,7 +77,7 @@ TEXTS = {
         "decision_text": {
             "excellent": "Вид идеальный, это Араратный день",
             "good": "Сегодня можно наслаждаться видом",
-            "cloudy": "Сегодня облака хотят быть в центре внимания",
+            "cloudy": "Сегодня облака хотят быть в центре внимания, Арарат частично выглядывает",
             "covered": "Гора закрыта облаками, сегодня лучше не ждать чёткого вида",
             "medium": "Всё нестабильно",
             "bad": "Арарат спрятался",
@@ -206,10 +206,10 @@ TEXTS = {
             "A good day to look far",
         ],
         "cloudy": [
-            "Clouds press from above, but there is still a gap in the distance",
-            "The sky is heavy, but Ararat still slips through",
-            "The clouds interfere, but they don’t win",
-        ],
+            "Clouds want attention too",
+            "Heavy clouds — Ararat is hiding but peeking through",
+            "Ararat is partly visible, but clouds are getting in the way"
+        ]
         "covered": [
             "Ararat is completely hidden today",
             "The mountain is behind a wall of clouds",
@@ -232,13 +232,13 @@ TEXTS = {
         ],
 
         "decision_text": {
-            "excellent": "perfect view",
-            "good": "visible",
-            "cloudy": "visible, but clouds interfere",
-            "covered": "the mountain is fully hidden",
-            "medium": "unstable conditions",
-            "bad": "not visible",
-            "smog": "air kills the view",
+            "excellent": "Crystal clear view — it’s an Ararat day",
+            "good": "A good day for the view",
+            "cloudy": "Clouds are stealing the spotlight today, Ararat is only partly visible",
+            "covered": "The mountain is hidden behind clouds, don’t expect a clear view today",
+            "medium": "Conditions are unstable",
+            "bad": "Ararat is hiding",
+            "smog": "Ararat went to find cleaner air"
         },
 
         "night_decision_text": {
