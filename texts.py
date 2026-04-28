@@ -209,7 +209,7 @@ TEXTS = {
             "Clouds want attention too",
             "Heavy clouds — Ararat is hiding but peeking through",
             "Ararat is partly visible, but clouds are getting in the way"
-        ]
+        ],
         "covered": [
             "Ararat is completely hidden today",
             "The mountain is behind a wall of clouds",
