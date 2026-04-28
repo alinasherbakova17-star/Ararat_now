@@ -283,18 +283,14 @@ def get_ararat_status_from_score(score: int, data: dict) -> str:
     snow_1h = data.get("snow_1h", 0) or 0
     weather_main = (data.get("weather_main") or "").lower()
 
-    # ------------------------
     # 1. жесткие стоп-факторы
-    # ------------------------
     if "thunderstorm" in weather_main:
         return "bad"
 
     if rain_1h >= 3 or snow_1h >= 2:
         return "bad"
 
-    # ------------------------
     # 2. смог
-    # ------------------------
     if (
         aqi >= 100
         or pm25 >= 35
@@ -303,34 +299,25 @@ def get_ararat_status_from_score(score: int, data: dict) -> str:
     ):
         return "smog"
 
-    # ------------------------
     # 3. полностью закрыто
-    # ------------------------
     if clouds >= 95:
-        if visibility >= 9000:
-            return "covered"
-        return "bad"
+        return "covered" if visibility >= 9000 else "bad"
 
-    # ------------------------
     # 4. осадки
-    # ------------------------
     if rain_1h > 0 or snow_1h > 0:
-        if score >= 70:
-            return "good"
         if score >= 50:
             return "cloudy"
         if score >= 30:
             return "medium"
         return "bad"
 
-    # ------------------------
-    # 5. ОСНОВНАЯ ЛОГИКА (фикс облаков)
-    # ------------------------
+    # 5. новая строгая логика
+    # excellent только при почти чистом небе и очень чистом воздухе
     if visibility >= 9000:
-        if clouds < 30 and aqi < 60:
+        if clouds < 10 and aqi < 40 and pm25 < 10:
             return "excellent"
 
-        if clouds < 50:
+        if clouds < 20 and aqi < 55:
             return "good"
 
         if clouds < 80:
@@ -338,12 +325,10 @@ def get_ararat_status_from_score(score: int, data: dict) -> str:
 
         return "bad"
 
-    # ------------------------
     # 6. fallback
-    # ------------------------
-    if score >= 75:
+    if score >= 75 and clouds < 10 and aqi < 40 and pm25 < 10:
         return "excellent"
-    if score >= 60:
+    if score >= 60 and clouds < 20 and aqi < 55:
         return "good"
     if score >= 45:
         return "cloudy"
