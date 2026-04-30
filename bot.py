@@ -507,6 +507,67 @@ async def broadcast_handler(message: Message):
     await message.answer(f"✅ Отправлено: {sent}")
 
 
+@dp.message(Command("broadcast_ru"))
+async def broadcast_ru_handler(message: Message):
+    if str(message.chat.id) != str(ADMIN_CHAT_ID):
+        return
+
+    command_text = message.text.replace("/broadcast_ru", "").strip()
+
+    if not command_text:
+        await message.answer("Напиши текст после команды")
+        return
+
+    users = get_all_users()
+
+    sent = 0
+
+    for user_id in users:
+        try:
+            await bot.send_message(user_id, command_text)
+
+            sent += 1
+
+            await asyncio.sleep(0.05)
+
+        except Exception:
+            logger.exception(f"Ошибка отправки user_id={user_id}")
+
+    await message.answer(f"✅ Отправлено: {sent}")
+
+
+
+@dp.message(Command("broadcast_en"))
+async def broadcast_en_handler(message: Message):
+    if str(message.chat.id) != str(ADMIN_CHAT_ID):
+        return
+
+    command_text = message.text.replace("/broadcast_en", "").strip()
+
+    if not command_text:
+        await message.answer("Write text after the command")
+        return
+
+    users = get_all_users()
+
+    sent = 0
+
+    for user_id in users:
+        try:
+            lang = get_user_language(user_id) or "ru"
+
+            if lang == "en":
+                await bot.send_message(user_id, command_text)
+
+                sent += 1
+
+                await asyncio.sleep(0.05)
+
+        except Exception:
+            logger.exception(f"Ошибка отправки user_id={user_id}")
+
+    await message.answer(f"✅ EN sent: {sent}")
+
 @dp.message(Command("stats"))
 async def stats_handler(message: Message) -> None:
     if str(message.chat.id) != str(ADMIN_CHAT_ID):
