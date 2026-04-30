@@ -324,3 +324,17 @@ def get_recent_photos_count(hours: int = 3):
     conn.close()
 
     return row["count"]
+
+def get_all_users():
+    conn = sqlite3.connect(DB_NAME)
+    conn.row_factory = sqlite3.Row
+
+    cursor = conn.cursor()
+
+    cursor.execute("SELECT chat_id FROM users")
+
+    users = [row["chat_id"] for row in cursor.fetchall()]
+
+    conn.close()
+
+    return users

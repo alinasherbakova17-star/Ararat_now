@@ -312,19 +312,6 @@ def build_morning_notification_text(lang: str, data: dict, status_key: str) -> s
         f"🎯 {decision_line}"
     )
 
-def get_all_users():
-    conn = sqlite3.connect(DB_NAME)
-    conn.row_factory = sqlite3.Row
-
-    cursor = conn.cursor()
-
-    cursor.execute("SELECT chat_id FROM users")
-
-    users = [row["chat_id"] for row in cursor.fetchall()]
-
-    conn.close()
-
-    return users
 
 
 def build_best_photo_caption(lang: str = "ru") -> str:
