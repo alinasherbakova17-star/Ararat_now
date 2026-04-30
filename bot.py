@@ -459,6 +459,7 @@ async def oracle_handler(message: Message) -> None:
         logger.exception("Ошибка в /oracle")
         await message.answer(f"Ошибка: {repr(e)}")
 
+        
         @dp.message(Command("broadcast"))
 async def broadcast_handler(message: Message):
     if str(message.chat.id) != str(ADMIN_CHAT_ID):
@@ -472,7 +473,6 @@ async def broadcast_handler(message: Message):
         try:
             lang = get_user_language(user_id) or "ru"
 
-            # 🇬🇧 English
             if lang == "en":
                 text = (
                     "🏔 Ararat is especially visible today from the top of Cascade\n\n"
@@ -482,7 +482,6 @@ async def broadcast_handler(message: Message):
                     "Perfect evening for a walk"
                 )
 
-            # 🇷🇺 Russian (default)
             else:
                 text = (
                     "🏔 Сегодня Арарат отлично читается с вершины Каскада\n\n"
@@ -496,7 +495,6 @@ async def broadcast_handler(message: Message):
 
             sent += 1
 
-            # маленькая пауза чтобы Telegram не психовал
             await asyncio.sleep(0.05)
 
         except Exception:
