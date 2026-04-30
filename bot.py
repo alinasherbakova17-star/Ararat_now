@@ -459,6 +459,51 @@ async def oracle_handler(message: Message) -> None:
         logger.exception("Ошибка в /oracle")
         await message.answer(f"Ошибка: {repr(e)}")
 
+        @dp.message(Command("broadcast"))
+async def broadcast_handler(message: Message):
+    if str(message.chat.id) != str(ADMIN_CHAT_ID):
+        return
+
+    users = get_all_subscribed_users()
+
+    sent = 0
+
+    for user_id in users:
+        try:
+            lang = get_user_language(user_id) or "ru"
+
+            # 🇬🇧 English
+            if lang == "en":
+                text = (
+                    "🏔 Ararat is especially visible today from the top of Cascade\n\n"
+                    "And at 18:00 there’s also a free jazz festival downstairs 🎷\n\n"
+                    "Rare combo:\n"
+                    "mountain + sunset + music\n\n"
+                    "Perfect evening for a walk"
+                )
+
+            # 🇷🇺 Russian (default)
+            else:
+                text = (
+                    "🏔 Сегодня Арарат отлично читается с вершины Каскада\n\n"
+                    "А внизу в 18:00 — джазовый фестиваль с бесплатным входом 🎷\n\n"
+                    "Редкое комбо:\n"
+                    "гора + закат + музыка\n\n"
+                    "Самое время выйти погулять"
+                )
+
+            await bot.send_message(user_id, text)
+
+            sent += 1
+
+            # маленькая пауза чтобы Telegram не психовал
+            await asyncio.sleep(0.05)
+
+        except Exception:
+            logger.exception(f"Ошибка отправки user_id={user_id}")
+
+    await message.answer(f"✅ Отправлено: {sent}")
+
 
 @dp.message(Command("stats"))
 async def stats_handler(message: Message) -> None:
