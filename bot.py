@@ -460,7 +460,7 @@ async def oracle_handler(message: Message) -> None:
         await message.answer(f"Ошибка: {repr(e)}")
 
         
- @dp.message(Command("broadcast"))
+@dp.message(Command("broadcast"))
 async def broadcast_handler(message: Message):
     if str(message.chat.id) != str(ADMIN_CHAT_ID):
         return
