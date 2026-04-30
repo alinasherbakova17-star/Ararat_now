@@ -326,7 +326,7 @@ def get_recent_photos_count(hours: int = 3):
     return row["count"]
 
 def get_all_users():
-    conn = sqlite3.connect(DB_NAME)
+    conn = sqlite3.connect(DB_PATH)
     conn.row_factory = sqlite3.Row
 
     cursor = conn.cursor()
