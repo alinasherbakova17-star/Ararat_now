@@ -19,6 +19,7 @@ from aiogram.types import (
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from apscheduler.triggers.cron import CronTrigger
 from dotenv import load_dotenv
+from db import get_all_users
 
 from weather import (
     calculate_ararat_score,
@@ -311,6 +312,20 @@ def build_morning_notification_text(lang: str, data: dict, status_key: str) -> s
         f"🎯 {decision_line}"
     )
 
+def get_all_users():
+    conn = sqlite3.connect(DB_NAME)
+    conn.row_factory = sqlite3.Row
+
+    cursor = conn.cursor()
+
+    cursor.execute("SELECT chat_id FROM users")
+
+    users = [row["chat_id"] for row in cursor.fetchall()]
+
+    conn.close()
+
+    return users
+
 
 def build_best_photo_caption(lang: str = "ru") -> str:
     return t(
@@ -360,6 +375,7 @@ async def send_main_panel(message: Message, lang: str, chat_id: int) -> None:
     )
 
     await message.answer(text, reply_markup=action_keyboard(lang, chat_id))
+
 
 
 @dp.message(Command("start"))
@@ -460,12 +476,13 @@ async def oracle_handler(message: Message) -> None:
         await message.answer(f"Ошибка: {repr(e)}")
 
         
+        
 @dp.message(Command("broadcast"))
 async def broadcast_handler(message: Message):
     if str(message.chat.id) != str(ADMIN_CHAT_ID):
         return
 
-    users = get_all_subscribed_users()
+    users = get_all_users()
 
     sent = 0
 
