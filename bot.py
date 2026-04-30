@@ -332,6 +332,18 @@ def should_send_notification(status_key: str, data: dict) -> bool:
 
     return False
 
+async def auto_subscribe_after_check(message: Message, chat_id: int, lang: str):
+    if not is_user_subscribed(chat_id):
+        subscribe_user(chat_id)
+        await message.answer(
+            t(
+                lang,
+                "auto_subscribed_after_check",
+                "🔔 Уведомления включены. Отключить можно кнопкой 🔕."
+            ),
+            reply_markup=action_keyboard(lang, chat_id),
+        )
+
 
 async def send_main_panel(message: Message, lang: str, chat_id: int) -> None:
     subscription_text = (
@@ -398,7 +410,7 @@ async def unsubscribe_command(message: Message) -> None:
 
 
 @dp.message(Command("check_now"))
-async def check_now_handler(message: Message) -> None:
+async def check_now_handler(message: Message):
     chat_id = message.chat.id
     ensure_user(chat_id)
     lang = get_user_language(chat_id)
@@ -411,9 +423,13 @@ async def check_now_handler(message: Message) -> None:
         data = get_weather_data(lang)
         status_key = get_status_with_score(data)
         text = build_weather_text(lang, data, status_key)
+
         await message.answer(text)
+        await auto_subscribe_after_check(message, chat_id, lang)
+
     except Exception as e:
-        logger.exception("Ошибка в /check_now")
+        print("=== FULL ERROR /check_now ===")
+        traceback.print_exc()
         await message.answer(f"Ошибка: {repr(e)}")
 
 
@@ -605,7 +621,6 @@ async def send_photo_callback(callback: CallbackQuery) -> None:
     )
     await callback.answer()
 
-
 @dp.callback_query(F.data == "check_now_inline")
 async def check_now_inline_callback(callback: CallbackQuery) -> None:
     if callback.message is None:
@@ -613,6 +628,8 @@ async def check_now_inline_callback(callback: CallbackQuery) -> None:
         return
 
     chat_id = callback.message.chat.id
+    ensure_user(chat_id)
+
     lang = get_user_language(chat_id)
 
     if not lang:
@@ -624,13 +641,17 @@ async def check_now_inline_callback(callback: CallbackQuery) -> None:
         data_weather = get_weather_data(lang)
         status_key = get_status_with_score(data_weather)
         text = build_weather_text(lang, data_weather, status_key)
+
         await callback.message.answer(text)
+
+        # 🔔 Автоподписка после первого нажатия "Проверить сейчас"
+        await auto_subscribe_after_check(callback.message, chat_id, lang)
+
     except Exception as e:
         logger.exception("Ошибка в inline check_now")
         await callback.message.answer(f"Ошибка: {repr(e)}")
 
     await callback.answer()
-
 
 @dp.callback_query(F.data == "oracle")
 async def oracle_callback(callback: CallbackQuery) -> None:

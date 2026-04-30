@@ -13,6 +13,7 @@ TEXTS = {
 
 
         "subscribe_button": "🔔 Включить уведомления",
+        "auto_subscribed_after_check": "🔔 Я включил уведомления: теперь буду присылать статус, когда есть смысл смотреть на Арарат. Отключить можно кнопкой 🔕.",
         "unsubscribe_button": "🔕 Отключить уведомления",
         "photo_button": "📸 Отправить фото",
         "check_now_button": " 👀 Проверить сейчас",
@@ -178,6 +179,7 @@ TEXTS = {
         "oracle_button": "🔮 Ararat Oracle",
 
         "subscribed_text": "Notifications enabled",
+        "auto_subscribed_after_check": "🔔 Notifications are now on: I’ll send updates when it makes sense to look for Ararat. You can turn them off with 🔕.",
         "unsubscribed_text": "Notifications disabled",
 
         "no_language": "Select language first",
@@ -325,6 +327,7 @@ TEXTS = {
                 "<b>Սեղմիր 🔔, որպեսզի Արարատյան օրերը բաց չթողնես</b>\n\n",
 
         "subscribe_button": "🔔 Միացնել ծանուցումները",
+        "auto_subscribed_after_check": "🔔 Ծանուցումները միացված են․ կուղարկեմ ստատուս, երբ արժե նայել Արարատին։ Կարող ես անջատել 🔕 կոճակով։",
         "unsubscribe_button": "🔕 Անջատել ծանուցումները",
         "photo_button": "📸 Ուղարկել լուսանկար",
         "check_now_button": "👀 Ստուգել հիմա",
