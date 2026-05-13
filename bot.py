@@ -151,53 +151,48 @@ def language_keyboard() -> InlineKeyboardMarkup:
     )
 
 
-def action_keyboard(lang: str, chat_id: int) -> InlineKeyboardMarkup:
-    rows = [
-        [
-            InlineKeyboardButton(
-                text=t(lang, "check_now_button", "👀 Проверить сейчас"),
-                callback_data="check_now_inline",
-            ),
-            InlineKeyboardButton(
-                text=t(lang, "oracle_button", "🔮 Оракул"),
-                callback_data="oracle",
-            ),
-            rows.append([
-            InlineKeyboardButton(
-                text=t(lang, "spots_button", "📍 Ararat Spots"),
-                callback_data="ararat_spots"
-           )
-           ])
-        ]
-    ]
+def action_keyboard(lang: str, chat_id: int):
+    rows = []
+
+    rows.append([
+        InlineKeyboardButton(
+            text=t(lang, "check_now_button", "👀 Проверить сейчас"),
+            callback_data="check_now_inline"
+        ),
+        InlineKeyboardButton(
+            text=t(lang, "oracle_button", "🔮 Оракул"),
+            callback_data="oracle"
+        )
+    ])
+
+    rows.append([
+        InlineKeyboardButton(
+            text=t(lang, "spots_button", "📍 Ararat Spots"),
+            callback_data="ararat_spots"
+        )
+    ])
 
     if is_user_subscribed(chat_id):
-        rows.append(
-            [
-                InlineKeyboardButton(
-                    text=t(lang, "unsubscribe_button", "🔕 Отключить"),
-                    callback_data="unsubscribe",
-                )
-            ]
-        )
-    else:
-        rows.append(
-            [
-                InlineKeyboardButton(
-                    text=t(lang, "subscribe_button", "🔔 Включить"),
-                    callback_data="subscribe",
-                )
-            ]
-        )
-
-    rows.append(
-        [
+        rows.append([
             InlineKeyboardButton(
-                text=t(lang, "photo_button", "📸 Отправить фото"),
-                callback_data="send_photo",
+                text=t(lang, "unsubscribe_button", "🔕 Отключить"),
+                callback_data="unsubscribe"
             )
-        ]
-    )
+        ])
+    else:
+        rows.append([
+            InlineKeyboardButton(
+                text=t(lang, "subscribe_button", "🔔 Включить"),
+                callback_data="subscribe"
+            )
+        ])
+
+    rows.append([
+        InlineKeyboardButton(
+            text=t(lang, "photo_button", "📸 Отправить фото"),
+            callback_data="send_photo"
+        )
+    ])
 
     return InlineKeyboardMarkup(inline_keyboard=rows)
 
