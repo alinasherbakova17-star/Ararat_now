@@ -18,6 +18,7 @@ TEXTS = {
         "photo_button": "📸 Отправить фото",
         "check_now_button": " 👀 Проверить сейчас",
         "oracle_button": "🔮 Араратный оракул",
+        "spots_button": "📍 Араратные места",
 
         "subscribed_text": "Уведомления включены",
         "unsubscribed_text": "Уведомления отключены",
@@ -178,6 +179,7 @@ TEXTS = {
         "photo_button": "📸 Send photo",
         "check_now_button": "👀 Check now",
         "oracle_button": "🔮 Ararat Oracle",
+        "spots_button": "📍 Ararat Spots",
 
         "subscribed_text": "Notifications enabled",
         "auto_subscribed_after_check": "🔔 Notifications are now on: I’ll send updates when it makes sense to look for Ararat. You can turn them off with 🔕.",
@@ -334,6 +336,7 @@ TEXTS = {
         "photo_button": "📸 Ուղարկել լուսանկար",
         "check_now_button": "👀 Ստուգել հիմա",
         "oracle_button": "🔮 Արարատն օրաքուլ",
+        "spots_button": "📍 Արարատի վայրեր",
 
         "subscribed_text": "Ծանուցումները միացված են",
         "unsubscribed_text": "Ծանուցումները անջատված են",

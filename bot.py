@@ -4,6 +4,7 @@ import os
 import random
 import traceback
 from typing import Any
+from spots import SPOTS
 
 from aiogram import Bot, Dispatcher, F
 from aiogram.client.default import DefaultBotProperties
@@ -161,6 +162,12 @@ def action_keyboard(lang: str, chat_id: int) -> InlineKeyboardMarkup:
                 text=t(lang, "oracle_button", "🔮 Оракул"),
                 callback_data="oracle",
             ),
+            rows.append([
+            InlineKeyboardButton(
+                text=t(lang, "spots_button", "📍 Ararat Spots"),
+                callback_data="ararat_spots"
+           )
+           ])
         ]
     ]
 
@@ -806,6 +813,15 @@ async def oracle_callback(callback: CallbackQuery) -> None:
     except Exception as e:
         logger.exception("Ошибка в inline oracle")
         await callback.message.answer(f"Ошибка: {repr(e)}")
+        elif data == "ararat_spots":
+    lang = get_user_language(chat_id)
+
+    if not lang:
+        await send_language_picker(callback.message)
+        await callback.answer()
+        return
+
+    await callback.message.answer(build_spots_text(lang))
 
     await callback.answer()
 
@@ -948,3 +964,38 @@ async def main() -> None:
 
 if __name__ == "__main__":
     asyncio.run(main())
+
+    def build_spots_text(lang: str) -> str:
+    spots = SPOTS.get(lang, SPOTS["ru"])
+
+    title = {
+        "ru": "📍 <b>Ararat Spots</b>\n\nМеста, откуда можно ловить Арарат:",
+        "en": "📍 <b>Ararat Spots</b>\n\nPlaces to catch Ararat:",
+        "hy": "📍 <b>Ararat Spots</b>\n\nՎայրեր, որտեղից կարելի է տեսնել Արարատը:",
+    }.get(lang, "📍 <b>Ararat Spots</b>")
+
+    text = title + "\n\n"
+
+    for i, spot in enumerate(spots, start=1):
+        text += (
+            f"<b>{i}. {spot['name']}</b>\n"
+            f"{spot['type']}\n"
+            f"{spot['description']}\n"
+            f"🕰 {spot['best_time']}\n"
+            f"🔗 {spot['link']}\n\n"
+        )
+
+    return text
+
+@dp.message(Command("ararat_spots"))
+async def ararat_spots_handler(message: Message):
+    chat_id = message.chat.id
+    ensure_user(chat_id)
+
+    lang = get_user_language(chat_id)
+
+    if not lang:
+        await send_language_picker(message)
+        return
+
+    await message.answer(build_spots_text(lang))
