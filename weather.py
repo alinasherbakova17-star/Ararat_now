@@ -208,14 +208,15 @@ def get_sky_text(lang: str, clouds: int) -> str:
 def get_air_status(data: dict) -> str:
     aqi = data["aqi"]
     pm25 = data["pm25"]
+    pm10 = data["pm10"]
 
-    if aqi <= 25 and pm25 <= 10:
+    if aqi <= 30 and pm25 <= 10 and pm10 <= 20:
         return "air_clean"
 
-    if aqi <= 60 and pm25 <= 20:
+    if aqi <= 60 and pm25 <= 20 and pm10 <= 40:
         return "air_ok"
 
-    if aqi <= 100 and pm25 <= 35:
+    if aqi <= 100 and pm25 <= 35 and pm10 <= 60:
         return "air_heavy"
 
     return "air_bad"
