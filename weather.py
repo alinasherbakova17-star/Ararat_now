@@ -75,12 +75,16 @@ def get_weather_data(lang="ru"):
     wind = weather_data.get("wind", {}).get("speed", 0)
     clouds = weather_data.get("clouds", {}).get("all", 0)
     visibility = weather_data.get("visibility", 0)
+    weather_items = weather_data.get("weather", [{}])
+    weather_main = weather_items[0].get("main", "")
+    weather_description = weather_items[0].get("description", "")
 
-    weather_main = weather_data.get("weather", [{}])[0].get("main", "")
-    weather_description = weather_data.get("weather", [{}])[0].get("description", "")
+    rain_1h = weather_data.get("rain", {}).get("1h", 0)
+    rain_3h = weather_data.get("rain", {}).get("3h", 0)
+    snow_1h = weather_data.get("snow", {}).get("1h", 0)
+    snow_3h = weather_data.get("snow", {}).get("3h", 0)
 
-    rain_1h = weather_data.get("rain", {}).get("1h", 0) or 0
-    snow_1h = weather_data.get("snow", {}).get("1h", 0) or 0
+  
 
     # воздух (новый источник)
     air_data = get_airquality_am_data(lang)
@@ -96,9 +100,59 @@ def get_weather_data(lang="ru"):
         "weather_main": weather_main,
         "weather_description": weather_description,
         "rain_1h": rain_1h,
+        "rain_3h": rain_3h,
         "snow_1h": snow_1h,
+        "snow_3h": snow_3h,
     }
 
+
+def get_precip_status(data: dict) -> str:
+    main = str(data.get("weather_main", "")).lower()
+    rain_1h = data.get("rain_1h", 0) or 0
+    rain_3h = data.get("rain_3h", 0) or 0
+    snow_1h = data.get("snow_1h", 0) or 0
+    snow_3h = data.get("snow_3h", 0) or 0
+
+    if "thunderstorm" in main:
+        return "thunderstorm"
+    if "snow" in main or snow_1h > 0 or snow_3h > 0:
+        return "snow"
+    if "drizzle" in main:
+        return "drizzle"
+    if "rain" in main or rain_1h > 0 or rain_3h > 0:
+        return "rain"
+
+    return "none"
+
+
+def get_precip_text(lang: str, data: dict) -> str:
+    status = get_precip_status(data)
+
+    texts = {
+        "ru": {
+            "none": "без осадков",
+            "rain": "дождь",
+            "drizzle": "морось",
+            "thunderstorm": "гроза",
+            "snow": "снег",
+        },
+        "en": {
+            "none": "no precipitation",
+            "rain": "rain",
+            "drizzle": "drizzle",
+            "thunderstorm": "thunderstorm",
+            "snow": "snow",
+        },
+        "hy": {
+            "none": "առանց տեղումների",
+            "rain": "անձրև",
+            "drizzle": "մանր անձրև",
+            "thunderstorm": "ամպրոպ",
+            "snow": "ձյուն",
+        },
+    }
+
+    return texts.get(lang, texts["en"]).get(status, status)
 
 # ------------------------
 # текст неба
@@ -111,7 +165,7 @@ def get_sky_text(lang: str, clouds: int) -> str:
             "soft": "переменная облачность",
             "cloudy": "облачно",
             "dense": "плотные облака",
-            "covered": "полностью закрыто облаками",
+            "covered": "полностью закрыто",
         },
         "en": {
             "clear": "clear",
@@ -119,7 +173,7 @@ def get_sky_text(lang: str, clouds: int) -> str:
             "soft": "partly cloudy",
             "cloudy": "cloudy",
             "dense": "dense clouds",
-            "covered": "fully covered by clouds",
+            "covered": "fully covered",
         },
         "hy": {
             "clear": "պարզ է",
@@ -127,7 +181,7 @@ def get_sky_text(lang: str, clouds: int) -> str:
             "soft": "փոփոխական ամպամածություն",
             "cloudy": "ամպամած",
             "dense": "խիտ ամպեր",
-            "covered": "ամբողջությամբ փակ է ամպերով",
+            "covered": "ամբողջությամբ փակ է",
         },
     }
 
@@ -137,14 +191,15 @@ def get_sky_text(lang: str, clouds: int) -> str:
         return local["clear"]
     if clouds < 30:
         return local["few"]
-    if clouds < 60:
+    if clouds < 50:
         return local["soft"]
-    if clouds < 80:
+    if clouds < 70:
         return local["cloudy"]
-    if clouds < 95:
+    if clouds < 85:
         return local["dense"]
-
     return local["covered"]
+
+   
 
 
 # ------------------------

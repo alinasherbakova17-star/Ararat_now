@@ -28,6 +28,8 @@ from weather import (
     get_sky_text,
     get_time_mode,
     get_weather_data,
+    get_precip_status,
+    get_precip_text,
 )
 from texts import TEXTS
 from db import (
@@ -239,6 +241,12 @@ def build_weather_text(lang: str, data: dict, status_key: str) -> str:
     air_key = get_air_status(data)
     time_mode = get_time_mode()
     sky_text = get_sky_text(lang, data["clouds"])
+    precip_text = get_precip_text(lang, data)
+    precip_status = get_precip_status(data)
+
+    precip_block = ""
+    if precip_status != "none":
+    precip_block = f"🌧 {t(lang, 'precip_label', 'Осадки')}: <b>{precip_text}</b>\n"
 
     status_line = safe_status_line(lang, status_key)
     air_line = safe_air_line(lang, air_key)
@@ -285,6 +293,7 @@ def build_weather_text(lang: str, data: dict, status_key: str) -> str:
         f"<b>🏔 Ararat Now</b>\n\n"
         f"<i>{status_line}</i>\n\n"
         f"🌤 {t(lang, 'sky_label', 'Небо')}: <b>{sky_text}</b>\n\n"
+        f"{precip_block}\n"
         f"🌡 {t(lang, 'temp_label', 'Температура')}: <b>{round(data['temp'])}°C</b>\n"
         f"💨 {t(lang, 'wind_label', 'Ветер')}: {round(data['wind'], 1)} m/s\n"
         f"☁️ {t(lang, 'clouds_label', 'Облачность')}: {data['clouds']}%\n"

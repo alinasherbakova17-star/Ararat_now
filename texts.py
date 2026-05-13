@@ -36,6 +36,7 @@ TEXTS = {
         "visibility_label": "Видимость",
         "air_label": "Воздух",
         "decision_label": "Вердикт",
+        "precip_label": "Осадки",
 
         # 🌤 статусы
         "excellent": [
@@ -196,6 +197,7 @@ TEXTS = {
         "visibility_label": "Visibility",
         "air_label": "Air",
         "decision_label": "Decision",
+        "precip_label": "Precipitation",
 
         "excellent": [
             "Everything is open today",
@@ -350,6 +352,7 @@ TEXTS = {
         "visibility_label": "Տեսանելիություն",
         "air_label": "Օդ",
         "decision_label": "Եզրակացություն",
+        "precip_label": "Տեղումներ",
 
         "excellent": [
             "Այսօր ամեն ինչ բաց է",
