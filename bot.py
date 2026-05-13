@@ -784,13 +784,7 @@ async def check_now_inline_callback(callback: CallbackQuery) -> None:
 
     await callback.answer()
 
-@dp.callback_query(F.data == "oracle")
-async def oracle_callback(callback: CallbackQuery) -> None:
-    if callback.message is None:
-        await callback.answer()
-        return
-
-    chat_id = callback.message.chat.id
+elif data == "oracle":
     lang = get_user_language(chat_id)
 
     if not lang:
@@ -803,17 +797,14 @@ async def oracle_callback(callback: CallbackQuery) -> None:
         status_key = get_status_with_score(data_weather)
         phrase = safe_oracle_phrase(lang, status_key)
 
-        title = {
-            "ru": "🔮 <b>Арарат сегодня говорит:</b>",
-            "en": "🔮 <b>Ararat says today:</b>",
-            "hy": "🔮 <b>Արարատն այսօր ասում է․</b>",
-        }.get(lang, "🔮 <b>Арарат сегодня говорит:</b>")
+        await callback.message.answer(phrase)
 
-        await callback.message.answer(f"{title}\n\n<i>{phrase}</i>")
     except Exception as e:
-        logger.exception("Ошибка в inline oracle")
+        traceback.print_exc()
         await callback.message.answer(f"Ошибка: {repr(e)}")
-        elif data == "ararat_spots":
+
+
+elif data == "ararat_spots":
     lang = get_user_language(chat_id)
 
     if not lang:
@@ -823,7 +814,8 @@ async def oracle_callback(callback: CallbackQuery) -> None:
 
     await callback.message.answer(build_spots_text(lang))
 
-    await callback.answer()
+
+await callback.answer()
 
 
 @dp.message(F.photo)
