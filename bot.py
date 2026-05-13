@@ -197,16 +197,16 @@ def action_keyboard(lang: str, chat_id: int):
     return InlineKeyboardMarkup(inline_keyboard=rows)
 
 
-async def set_main_menu() -> None:
+async def set_main_menu():
     commands = [
         BotCommand(command="start", description="Запустить бота"),
         BotCommand(command="check_now", description="Проверить Арарат"),
         BotCommand(command="oracle", description="Араратный оракул"),
+        BotCommand(command="ararat_spots", description="Араратные места"),
         BotCommand(command="subscribe", description="Включить уведомления"),
         BotCommand(command="unsubscribe", description="Отключить уведомления"),
     ]
     await bot.set_my_commands(commands)
-
 
 async def send_language_picker(message: Message) -> None:
     await message.answer(
