@@ -677,67 +677,6 @@ async def send_best_now_handler(message: Message) -> None:
 
     await message.answer(f"Подборка дня отправлена: {sent} пользователям")
 
-
-@dp.callback_query(F.data.startswith("lang_"))
-async def language_callback(callback: CallbackQuery) -> None:
-    if callback.message is None or callback.data is None:
-        await callback.answer()
-        return
-
-    chat_id = callback.message.chat.id
-    ensure_user(chat_id)
-
-    lang = callback.data.replace("lang_", "")
-    if lang not in ("ru", "en", "hy"):
-        await callback.answer("Unknown language")
-        return
-
-    set_user_language(chat_id, lang)
-
-    await callback.message.answer(
-        f"{t(lang, 'language_set', 'Язык установлен')}\n\n"
-        f"{t(lang, 'check_prompt', 'Теперь можно проверить видимость')}",
-        reply_markup=action_keyboard(lang, chat_id),
-    )
-    await callback.answer()
-
-
-@dp.callback_query(F.data == "subscribe")
-async def subscribe_callback(callback: CallbackQuery) -> None:
-    if callback.message is None:
-        await callback.answer()
-        return
-
-    chat_id = callback.message.chat.id
-    ensure_user(chat_id)
-    lang = get_user_language(chat_id) or "ru"
-
-    subscribe_user(chat_id)
-    await callback.message.answer(
-        t(lang, "subscribed_text", "Уведомления включены"),
-        reply_markup=action_keyboard(lang, chat_id),
-    )
-    await callback.answer()
-
-
-@dp.callback_query(F.data == "unsubscribe")
-async def unsubscribe_callback(callback: CallbackQuery) -> None:
-    if callback.message is None:
-        await callback.answer()
-        return
-
-    chat_id = callback.message.chat.id
-    ensure_user(chat_id)
-    lang = get_user_language(chat_id) or "ru"
-
-    unsubscribe_user(chat_id)
-    await callback.message.answer(
-        t(lang, "unsubscribed_text", "Уведомления отключены"),
-        reply_markup=action_keyboard(lang, chat_id),
-    )
-    await callback.answer()
-
-
 @dp.callback_query(F.data == "send_photo")
 async def send_photo_callback(callback: CallbackQuery) -> None:
     if callback.message is None:
@@ -751,6 +690,7 @@ async def send_photo_callback(callback: CallbackQuery) -> None:
         t(lang, "photo_prompt", "Отправь фото Арарата 📸")
     )
     await callback.answer()
+
 
 @dp.callback_query(F.data == "check_now_inline")
 async def check_now_inline_callback(callback: CallbackQuery) -> None:
@@ -784,7 +724,16 @@ async def check_now_inline_callback(callback: CallbackQuery) -> None:
 
     await callback.answer()
 
-elif data == "oracle":
+
+@dp.callback_query(F.data == "oracle")
+async def oracle_callback(callback: CallbackQuery) -> None:
+    if callback.message is None:
+        await callback.answer()
+        return
+
+    chat_id = callback.message.chat.id
+    ensure_user(chat_id)
+
     lang = get_user_language(chat_id)
 
     if not lang:
@@ -797,14 +746,63 @@ elif data == "oracle":
         status_key = get_status_with_score(data_weather)
         phrase = safe_oracle_phrase(lang, status_key)
 
-        await callback.message.answer(phrase)
+        title = {
+            "ru": "🔮 <b>Арарат сегодня говорит:</b>",
+            "en": "🔮 <b>Ararat says today:</b>",
+            "hy": "🔮 <b>Արարատն այսօր ասում է․</b>",
+        }.get(lang, "🔮 <b>Арарат сегодня говорит:</b>")
+
+        await callback.message.answer(f"{title}\n\n<i>{phrase}</i>")
 
     except Exception as e:
-        traceback.print_exc()
+        logger.exception("Ошибка oracle")
         await callback.message.answer(f"Ошибка: {repr(e)}")
 
+    await callback.answer()
 
-elif data == "ararat_spots":
+
+def build_spots_text(lang: str) -> str:
+    spots = SPOTS.get(lang, SPOTS["ru"])
+
+    title = {
+        "ru": "📍 <b>Ararat Spots</b>\n\nМеста, откуда можно ловить Арарат:",
+        "en": "📍 <b>Ararat Spots</b>\n\nPlaces to catch Ararat:",
+        "hy": "📍 <b>Ararat Spots</b>\n\nՎայրեր, որտեղից կարելի է տեսնել Արարատը:",
+    }.get(lang, "📍 <b>Ararat Spots</b>")
+
+    text = title + "\n\n"
+
+    for i, spot in enumerate(spots, start=1):
+        text += (
+            f"<b>{i}. {spot['name']}</b>\n"
+            f"{spot['type']}\n"
+            f"{spot['description']}\n"
+            f"🕰 {spot['best_time']}\n"
+        )
+
+        if spot.get("website"):
+            text += f"🌐 {spot['website']}\n"
+
+        if spot.get("instagram"):
+            text += f"📸 {spot['instagram']}\n"
+
+        if spot.get("link"):
+            text += f"🔗 {spot['link']}\n"
+
+        text += "\n"
+
+    return text
+
+
+@dp.callback_query(F.data == "ararat_spots")
+async def ararat_spots_callback(callback: CallbackQuery) -> None:
+    if callback.message is None:
+        await callback.answer()
+        return
+
+    chat_id = callback.message.chat.id
+    ensure_user(chat_id)
+
     lang = get_user_language(chat_id)
 
     if not lang:
@@ -813,9 +811,21 @@ elif data == "ararat_spots":
         return
 
     await callback.message.answer(build_spots_text(lang))
+    await callback.answer()
 
 
-await callback.answer()
+@dp.message(Command("ararat_spots"))
+async def ararat_spots_handler(message: Message) -> None:
+    chat_id = message.chat.id
+    ensure_user(chat_id)
+
+    lang = get_user_language(chat_id)
+
+    if not lang:
+        await send_language_picker(message)
+        return
+
+    await message.answer(build_spots_text(lang))
 
 
 @dp.message(F.photo)
@@ -842,12 +852,13 @@ async def handle_photo(message: Message) -> None:
             )
 
         await message.answer(
-            t(lang, "photo_received", "📸 Фото принято.")
+            t(lang, "photo_received", "📸 Фото принято. Момент зафиксирован.")
         )
+
     except Exception:
         logger.exception("Ошибка при обработке фото")
         await message.answer(
-            t(lang, "photo_received", "📸 Фото принято.")
+            t(lang, "photo_received", "📸 Фото принято. Момент зафиксирован.")
         )
 
 
@@ -956,38 +967,3 @@ async def main() -> None:
 
 if __name__ == "__main__":
     asyncio.run(main())
-
-    def build_spots_text(lang: str) -> str:
-    spots = SPOTS.get(lang, SPOTS["ru"])
-
-    title = {
-        "ru": "📍 <b>Ararat Spots</b>\n\nМеста, откуда можно ловить Арарат:",
-        "en": "📍 <b>Ararat Spots</b>\n\nPlaces to catch Ararat:",
-        "hy": "📍 <b>Ararat Spots</b>\n\nՎայրեր, որտեղից կարելի է տեսնել Արարատը:",
-    }.get(lang, "📍 <b>Ararat Spots</b>")
-
-    text = title + "\n\n"
-
-    for i, spot in enumerate(spots, start=1):
-        text += (
-            f"<b>{i}. {spot['name']}</b>\n"
-            f"{spot['type']}\n"
-            f"{spot['description']}\n"
-            f"🕰 {spot['best_time']}\n"
-            f"🔗 {spot['link']}\n\n"
-        )
-
-    return text
-
-@dp.message(Command("ararat_spots"))
-async def ararat_spots_handler(message: Message):
-    chat_id = message.chat.id
-    ensure_user(chat_id)
-
-    lang = get_user_language(chat_id)
-
-    if not lang:
-        await send_language_picker(message)
-        return
-
-    await message.answer(build_spots_text(lang))
