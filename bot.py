@@ -238,15 +238,22 @@ def get_status_with_score(data: dict) -> str:
 
 def build_weather_text(lang: str, data: dict, status_key: str) -> str:
     visibility_km = round(data["visibility"] / 1000, 1)
+
     air_key = get_air_status(data)
     time_mode = get_time_mode()
+
     sky_text = get_sky_text(lang, data["clouds"])
+
     precip_text = get_precip_text(lang, data)
     precip_status = get_precip_status(data)
 
     precip_block = ""
+
     if precip_status != "none":
-    precip_block = f"🌧 {t(lang, 'precip_label', 'Осадки')}: <b>{precip_text}</b>\n"
+        precip_block = (
+            f"🌧 {t(lang, 'precip_label', 'Осадки')}: "
+            f"<b>{precip_text}</b>\n"
+        )
 
     status_line = safe_status_line(lang, status_key)
     air_line = safe_air_line(lang, air_key)
