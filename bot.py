@@ -4,7 +4,7 @@ import os
 import random
 import traceback
 from typing import Any
-from spots import SPOTS
+from spots import SPOTS.py
 
 from aiogram import Bot, Dispatcher, F
 from aiogram.client.default import DefaultBotProperties
