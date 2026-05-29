@@ -686,6 +686,27 @@ async def send_photo_callback(callback: CallbackQuery) -> None:
     )
     await callback.answer()
 
+    @dp.callback_query(F.data.startswith("lang_"))
+async def language_callback(callback: CallbackQuery):
+    if callback.message is None:
+        await callback.answer()
+        return
+
+    lang = callback.data.replace("lang_", "")
+
+    chat_id = callback.message.chat.id
+
+    ensure_user(chat_id)
+    set_user_language(chat_id, lang)
+
+    await callback.message.answer(
+        f"{t(lang, 'language_set', 'Язык установлен')}\n\n"
+        f"{t(lang, 'check_prompt', 'Теперь можно проверить видимость')}",
+        reply_markup=action_keyboard(lang, chat_id),
+    )
+
+    await callback.answer("✅")
+
 
 @dp.callback_query(F.data == "check_now_inline")
 async def check_now_inline_callback(callback: CallbackQuery) -> None:
