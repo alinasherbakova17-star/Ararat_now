@@ -742,6 +742,47 @@ async def check_now_inline_callback(callback: CallbackQuery) -> None:
 
     await callback.answer()
 
+@dp.callback_query(F.data == "subscribe")
+async def subscribe_callback(callback: CallbackQuery) -> None:
+    if callback.message is None:
+        await callback.answer()
+        return
+
+    chat_id = callback.message.chat.id
+    ensure_user(chat_id)
+
+    lang = get_user_language(chat_id) or "ru"
+
+    subscribe_user(chat_id)
+
+    await callback.message.answer(
+        t(lang, "subscribed_text", "Уведомления включены"),
+        reply_markup=action_keyboard(lang, chat_id),
+    )
+
+    await callback.answer("🔔")
+
+
+@dp.callback_query(F.data == "unsubscribe")
+async def unsubscribe_callback(callback: CallbackQuery) -> None:
+    if callback.message is None:
+        await callback.answer()
+        return
+
+    chat_id = callback.message.chat.id
+    ensure_user(chat_id)
+
+    lang = get_user_language(chat_id) or "ru"
+
+    unsubscribe_user(chat_id)
+
+    await callback.message.answer(
+        t(lang, "unsubscribed_text", "Уведомления отключены"),
+        reply_markup=action_keyboard(lang, chat_id),
+    )
+
+    await callback.answer("🔕")
+
 @dp.callback_query(F.data == "oracle")
 async def oracle_callback(callback: CallbackQuery) -> None:
     if callback.message is None:
