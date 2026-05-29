@@ -686,13 +686,17 @@ async def send_photo_callback(callback: CallbackQuery) -> None:
     )
     await callback.answer()
 
-    @dp.callback_query(F.data.startswith("lang_"))
-async def language_callback(callback: CallbackQuery):
-    if callback.message is None:
+ @dp.callback_query(F.data.startswith("lang_"))
+async def language_callback(callback: CallbackQuery) -> None:
+    if callback.message is None or callback.data is None:
         await callback.answer()
         return
 
     lang = callback.data.replace("lang_", "")
+
+    if lang not in ("ru", "en", "hy"):
+        await callback.answer("Unknown language")
+        return
 
     chat_id = callback.message.chat.id
 
@@ -730,8 +734,6 @@ async def check_now_inline_callback(callback: CallbackQuery) -> None:
         text = build_weather_text(lang, data_weather, status_key)
 
         await callback.message.answer(text)
-
-        # 🔔 Автоподписка после первого нажатия "Проверить сейчас"
         await auto_subscribe_after_check(callback.message, chat_id, lang)
 
     except Exception as e:
@@ -739,8 +741,7 @@ async def check_now_inline_callback(callback: CallbackQuery) -> None:
         await callback.message.answer(f"Ошибка: {repr(e)}")
 
     await callback.answer()
-
-
+    
 @dp.callback_query(F.data == "oracle")
 async def oracle_callback(callback: CallbackQuery) -> None:
     if callback.message is None:
