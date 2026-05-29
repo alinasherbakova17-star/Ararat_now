@@ -686,7 +686,7 @@ async def send_photo_callback(callback: CallbackQuery) -> None:
     )
     await callback.answer()
 
- @dp.callback_query(F.data.startswith("lang_"))
+@dp.callback_query(F.data.startswith("lang_"))
 async def language_callback(callback: CallbackQuery) -> None:
     if callback.message is None or callback.data is None:
         await callback.answer()
@@ -741,7 +741,7 @@ async def check_now_inline_callback(callback: CallbackQuery) -> None:
         await callback.message.answer(f"Ошибка: {repr(e)}")
 
     await callback.answer()
-    
+
 @dp.callback_query(F.data == "oracle")
 async def oracle_callback(callback: CallbackQuery) -> None:
     if callback.message is None:
